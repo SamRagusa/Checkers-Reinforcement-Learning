@@ -34,6 +34,26 @@ class Board:
             self.spots = old_spots
 
 
+    def wipe_board(self):
+        self = Board()
+
+    
+    def is_game_over(self):
+        p1_piece = False
+        p2_piece = False
+        for row in self.spots:
+            for element in row:
+                if not p1_piece and (element == 1 or element == 3):
+                    p1_piece = True
+                    if p2_piece:
+                        return False
+                if not p2_piece and (element == 2 or element == 4):
+                    p2_piece = True
+                    if p1_piece:
+                        return False
+        return True
+
+
     def not_spot(self, loc):
         if len(loc) == 0 or loc[0] < 0 or loc[0] > 7 or loc[1] < 0 or loc[1] > 3:
             return True
@@ -201,6 +221,17 @@ class Board:
                 
         if switch_player_turn:
             self.player_turn = not self.player_turn
+       
+        
+    """
+    Get's the potential spots of the board if it makes the move given.
+    """
+    def get_potential_spots_from_move(self, move):
+        original_spots = copy.deepcopy(self.spots)
+        self.make_move(move, switch_player_turn=False)
+        answer = copy.deepcopy(self.spots)
+        self.spots = original_spots
+        return answer
         
     
     """
