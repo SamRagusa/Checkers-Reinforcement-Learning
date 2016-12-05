@@ -86,8 +86,10 @@ class Board:
     """
     NOTE: REALLY DON'T THINK I NEED, NOT CURRENTLY USED
     """
-    def are_same_players(self, location1, location2):
-        if self.spots[location1[0]][location1[1]] == self.spots[location2[0]][location2[1]]:
+    def is_players_piece(self, player_id, spot_data):
+        if player_id and (spot_data==1 or spot_data == 3):
+            return True
+        elif not player_id and (spot_data == 2 or spot_data == 4):
             return True
         return False
     
@@ -224,13 +226,15 @@ class Board:
        
         
     """
-    Get's the potential spots of the board if it makes the move given.
+    Get's the potential spots of the board if it makes the one of the given moves.
     """
-    def get_potential_spots_from_move(self, move):
-        original_spots = copy.deepcopy(self.spots)
-        self.make_move(move, switch_player_turn=False)
-        answer = copy.deepcopy(self.spots)
-        self.spots = original_spots
+    def get_potential_spots_from_moves(self, moves):
+        answer = []
+        for move in moves:
+            original_spots = copy.deepcopy(self.spots)
+            self.make_move(move, switch_player_turn=False)
+            answer.append(copy.deepcopy(self.spots))
+            self.spots = copy.deepcopy(original_spots)
         return answer
         
     
