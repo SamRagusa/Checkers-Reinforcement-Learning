@@ -35,7 +35,7 @@ class Board:
 
 
     def wipe_board(self):
-        self = Board()
+        self.spots = copy.deepcopy(Board().spots)
 
     
     def is_game_over(self):
@@ -227,8 +227,11 @@ class Board:
         
     """
     Get's the potential spots of the board if it makes the one of the given moves.
+    If moves is None then returns it's own spots
     """
     def get_potential_spots_from_moves(self, moves):
+        if moves is None:
+            return self.spots
         answer = []
         for move in moves:
             original_spots = copy.deepcopy(self.spots)
@@ -334,9 +337,9 @@ def make_random_move(board):
 
 
 
-test = Board()
-
-all_states = get_possible_states(test.get_small_string_for_board())
-print(len(all_states))
+# test = Board()
+# 
+# all_states = get_possible_states(test.get_small_string_for_board())
+# print(len(all_states))
 
 
