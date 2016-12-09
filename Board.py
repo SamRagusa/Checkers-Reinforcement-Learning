@@ -18,12 +18,12 @@ The class for the game board for 8x8 checkers
 """
 class Board:
     
-    BACKWARDS_PLAYER = 2
     EMPTY_SPOT = 0
     P1 = 1
     P2 = 2
     P1_K = 3
     P2_K = 4
+    BACKWARDS_PLAYER = P2
     
     
     def __init__(self, old_spots=None, the_player_turn=True): #maybe have default parameter so board is 8x8 by default but nxn if wanted
@@ -36,7 +36,6 @@ class Board:
 
     def wipe_board(self):
         self.spots = copy.deepcopy(Board().spots)
-
     
     def is_game_over(self):
         p1_piece = False
@@ -81,7 +80,7 @@ class Board:
                 return True
             else:
                 return False
-    
+
     
     """
     NOTE: REALLY DON'T THINK I NEED, NOT CURRENTLY USED
@@ -321,25 +320,4 @@ def get_possible_states(start_board_string):
         if len(connected)%2500==0:
             print("len(connected): " + str(len(connected)) + "   len(to_connect): " + str(len(to_connect)) + "     time since execution: " + str(time.time() - start_time))
     return connected
-
-
-
-def make_random_move(board):
-
-    possible_moves = board.get_possible_next_moves()
-    if len(possible_moves) == 0:
-        return False
-    rand_move = possible_moves[random.randint(0,len(possible_moves)-1)]
-    board.make_move(rand_move)
-    return True
-
-
-
-
-
-# test = Board()
-# 
-# all_states = get_possible_states(test.get_small_string_for_board())
-# print(len(all_states))
-
 

@@ -7,7 +7,7 @@ Created on Dec 3, 2016
 
 import random, copy, time
 from game import Board
-
+#import matplotlib.pyplot as plt
 
 
 """
@@ -76,11 +76,11 @@ def get_desired_transition_between_states(q_array, q_array_states, cur_state, po
 def get_next_desired_move(board, state_array, q_array, q_array_states, player_id):
     
     possible_next_moves = board.get_possible_next_moves()
-    possible_next_board_spots = board.get_potential_spots_from_moves(possible_next_moves)
-    possible_next_states = get_states_from_boards_spots(state_array, possible_next_board_spots, player_id)
+    #possible_next_board_spots = board.get_potential_spots_from_moves(possible_next_moves)
+    possible_next_states = get_states_from_boards_spots(state_array, board.get_potential_spots_from_moves(possible_next_moves), player_id)
     
-    cur_state = get_states_from_boards_spots(state_array, [board.spots], player_id)[0]
-    desired_next_state = get_desired_transition_between_states(q_array, q_array_states, cur_state, possible_next_states)
+    #cur_state = get_states_from_boards_spots(state_array, [board.spots], player_id)[0]
+    desired_next_state = get_desired_transition_between_states(q_array, q_array_states, get_states_from_boards_spots(state_array, [board.spots], player_id)[0], possible_next_states)
     
     considered_moves = []
     for j in range(len(possible_next_states)):
@@ -91,17 +91,36 @@ def get_next_desired_move(board, state_array, q_array, q_array_states, player_id
     except ValueError:
         return []
 
+def get_number_of_pieces_and_kings(spots, player_id):
+    if player_id:
+        piece = 1
+        king = 3
+    else:
+        piece = 2 
+        king = 4
+        
+    piece_counter = 0
+    king_counter = 0
+    for row in spots:
+        for element in row:
+            if element == piece:
+                piece_counter = piece_counter + 1
+            elif element == king:
+                king_counter = king_counter + 1
+    return [piece_counter,king_counter]
 
-def reward_function(state1, state2):
-    pass    #IMPLEMENT THIS
+
+"""
+for testing try putting a 1 reward on win states and 0 on every other.
+"""
+def reward_function(state_info1, state_info2, player_id):
+    return .1*(state_info2[0]-state_info1[0] + 3*(state_info2[2]-state_info1[2])-(state_info2[1]-state_info1[1])-3*(state_info2[3]-state_info1[3]))
 
 
 def get_random_move(board):
-
     possible_moves = board.get_possible_next_moves()
-    if len(possible_moves) == 0:
-        return False
-    if len(possible_moves) != 0:
+    #print("test")
+    if possible_moves:
         return possible_moves[random.randint(0,len(possible_moves)-1)]
     else:
         return []
@@ -120,12 +139,12 @@ for own_pieces in range(13):
                             state_array.append([own_pieces,opp_pieces, own_kings, opp_kings, own_side_edges, own_base])
 
 
-print(len(state_array))
+#print(len(state_array))
 
-LEARNING_RATE = None  #pick this (maybe .1)
-DISCOUNT_FACTOR = None #pick this (start low  [above 0] then gradually go to 1)
+LEARNING_RATE = .1  #pick this (maybe .1)
+DISCOUNT_FACTOR = .2 #pick this (start low  [above 0] then gradually go to 1)
 NUM_STATES = len(state_array)
-NUM_GAMES_TO_PLAY = 1000 
+NUM_GAMES_TO_PLAY = 100
 PLAYER_ID = True
 
 q_array = [[]for j in range(NUM_STATES)]
@@ -141,45 +160,101 @@ times first so that the AI is able to get an estimate of optimal future
 value which is defined as max value in new states Q vector for any action
 """
 
-move_counter = [0]*NUM_GAMES_TO_PLAY
+win_counter = 0
+loss_counter = 0
+move_counter = 0
+game_move_counter =[0]*NUM_GAMES_TO_PLAY
+game_is_over = False
 for j in range(NUM_GAMES_TO_PLAY):
-    while not game_board.is_game_over():
-        #own_last_state = get_states_from_boards_spots(state_array, [game_board.get_potential_spots_from_moves(None)],PLAYER_ID)[0]
+    game_is_over = False
+    while not game_is_over:
+        #print("test2 game: " + str(j))
+        #if j>20:
+        own_last_state = get_states_from_boards_spots(state_array, [game_board.get_potential_spots_from_moves(None)],PLAYER_ID)[0]
         next_move = get_next_desired_move(game_board, state_array, q_array, q_array_states, PLAYER_ID)
         if next_move:
+            if j%10 == 0:
+                game_board.print_board()
+                print("")
             game_board.make_move(get_next_desired_move(game_board, state_array, q_array, q_array_states, PLAYER_ID))
-            move_counter[j] = move_counter[j] + 1
+            new_state = get_states_from_boards_spots(state_array, [game_board.get_potential_spots_from_moves(None)],PLAYER_ID)[0]
+            game_move_counter[j] = game_move_counter[j] + 1
+            move_counter = move_counter + 1
+            if not game_board.is_game_over():
+                next_move = get_random_move(game_board)
+                if next_move:
+                    if j%10 == 0:
+                        game_board.print_board()
+                    game_board.make_move(get_random_move(game_board))
+                    game_move_counter[j] = game_move_counter[j] + 1
+                    move_counter = move_counter + 1
+                else:
+                    game_is_over = True
+
+                #game_board.make_move(opponent.get_next_move(game_board, not PLAYER_ID))
+                #if j > 20: 
+                #new_state = get_states_from_boards_spots(state_array, [game_board.get_potential_spots_from_moves(None)],PLAYER_ID)[0]
+                if q_array[new_state]:
+                    estimate_of_optimal_future_value = max(q_array[new_state])
+                    #print(estimate_of_optimal_future_value)
+                    index_in_q_array = q_array_states[own_last_state].index(new_state)
+                    q_array[own_last_state][index_in_q_array] = q_array[own_last_state][index_in_q_array] + LEARNING_RATE*(reward_function(state_array[own_last_state],state_array[new_state], PLAYER_ID) + DISCOUNT_FACTOR*max(q_array[new_state]) - q_array[own_last_state][q_array_states[own_last_state].index(new_state)])
+            game_is_over = game_board.is_game_over();
         else:
-            print("No more possible moves!")
-            game_board.wipe_board()
-            break
+            game_is_over = True
+    else:
+        game_board.print_board()
+        #print(str(j+1) +  " Games played in "  + str(time.time()-start_time) + " seconds ")
+        #print(get_number_of_pieces_and_kings(game_board.spots, PLAYER_ID))
+        #print(get_number_of_pieces_and_kings(game_board.spots, not PLAYER_ID))
+        if get_number_of_pieces_and_kings(game_board.spots, PLAYER_ID) == [0,0]:
+            print("Game lost!  Has been " + str(j+1) +  " Games played in "  + str(time.time()-start_time) + " seconds ")
+            loss_counter = loss_counter + 1
+        elif get_number_of_pieces_and_kings(game_board.spots, not PLAYER_ID) == [0,0]:
+            win_counter = win_counter + 1
+            print("Game won!  Has been " + str(j+1) +  " Games played in "  + str(time.time()-start_time) + " seconds ")
+        else:
+            print("Game tied!  Has been " + str(j+1) +  " Games played in "  + str(time.time()-start_time) + " seconds ")
+        game_board.wipe_board()
         
-        if not game_board.is_game_over():
-            next_move = get_random_move(game_board)
-            if next_move:
-                game_board.make_move(get_random_move(game_board))
-            else:
-                print("No more possible moves!")
-                game_board.wipe_board()
-                break
-            #game_board.make_move(opponent.get_next_move(game_board, not PLAYER_ID)) 
-            #new_state = get_states_from_boards_spots(state_array, [game_board.get_potential_spots_from_moves(None)],PLAYER_ID)[0]
-            #estimate_of_optimal_future_value = None  #########PUT THIS IN#############
-            #q_array[own_last_state][q_array_states[own_last_state].index(new_state)] = q_array[own_last_state][q_array_states[own_last_state].index(new_state)] + LEARNING_RATE*(reward_function(own_last_state,new_state) + DISCOUNT_FACTOR*estimate_of_optimal_future_value - q_array[own_last_state][q_array_states[own_last_state].index(new_state)])
-            move_counter[j] = move_counter[j] + 1
-    
-    
-    print(str(j+1) +  " Games played in "  + str(time.time()-start_time) + " seconds ")
-    #game_board.print_board()
-    game_board.wipe_board()
-    
-sum = 0
+
+  
+        
+
+the_sum = 0
 num_states_used = 0
+max_transitions = 0
 for temp in q_array:
     if len(temp)!=0:
-        sum = sum + len(temp)
+        if len(temp) > max_transitions:
+            max_transitions = len(temp)
+        the_sum = the_sum + len(temp)
         num_states_used = num_states_used + 1
-print(sum)
-avg = float(sum)/num_states_used
-print(avg)
+        
+avg = float(the_sum)/num_states_used
     
+    
+print("")
+print("Total time to play " + str(NUM_GAMES_TO_PLAY) + " games: " + str(time.time()-start_time))
+print("Average time to play a game: " + str((float(time.time())- start_time)/ NUM_GAMES_TO_PLAY))
+print("Games won :" + str(win_counter))
+print("Games lost : " + str(loss_counter))
+print("Games tied : " + str(NUM_GAMES_TO_PLAY-win_counter-loss_counter))
+print("Total number of moves made: " + str(move_counter))
+print("Average moves per game: " + str(float(move_counter)/NUM_GAMES_TO_PLAY))
+print("Maximum transitions for a state: " + str(max_transitions))
+print("Total transitions: " + str(the_sum))
+print("Average Transitions per state used: " + str(avg))
+
+
+
+sum_delta_moves_init = 0
+sum_delta_moves_final = 0
+for j in range(10):
+    sum_delta_moves_init = sum_delta_moves_init + game_move_counter[j]
+    sum_delta_moves_final = sum_delta_moves_final + game_move_counter[len(game_move_counter)-10 + j]
+sum_delta_moves_final = sum_delta_moves_final/10
+sum_delta_moves_init = sum_delta_moves_init/10
+
+print("Average number of moves for first 10 games: " + str(sum_delta_moves_init))
+print("Average number of moves for the last 10 games: " + str(sum_delta_moves_final))
