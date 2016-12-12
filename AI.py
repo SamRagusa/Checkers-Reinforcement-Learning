@@ -119,11 +119,65 @@ def reward_function(state_info1, state_info2, player_id):
 
 def get_random_move(board):
     possible_moves = board.get_possible_next_moves()
-    #print("test")
     if possible_moves:
         return possible_moves[random.randint(0,len(possible_moves)-1)]
     else:
         return []
+
+
+def is_terminal(board):
+    if not board.get_possible_next_moves():
+        return True
+    return False
+
+
+def alphabeta(board, depth, alpha, beta, maximizing_player):
+    if depth == 0:
+        if is_terminal(board):
+            if get_number_of_pieces_and_kings(board.spots, not maximizing_player) == [0,0]:
+                return float('-inf'), None
+            elif get_number_of_pieces_and_kings(board.spots, maximizing_player) == [0,0]: #make sure not is used correctly
+                return float('inf'), None
+            else:
+                return 0, None
+        self_info = get_number_of_pieces_and_kings(board.spots, maximizing_player)
+        opp_info = get_number_of_pieces_and_kings(board.spots, not maximizing_player)
+        return self_info[0] + 3*self_info[1] - (opp_info[0] + 3*opp_info[1]) , None
+                
+    possible_moves = board.get_possible_next_moves()
+    potential_spots = board.get_potential_spots_from_moves(possible_moves)
+    desired_move_index = None
+    if maximizing_player:
+        v = float('-inf')
+        for j in range(len(potential_spots)):
+            cur_board = Board.Board(potential_spots[j], not board.player_turn)
+            alpha_beta_results = alphabeta(cur_board, depth - 1, alpha, beta, False)
+            
+            if v != max(v, alpha_beta_results[0]):
+                v = max(v, alpha_beta_results[0])
+                alpha = max(alpha, v)
+                desired_move_index = j
+            if beta <= alpha:
+                break
+        if desired_move_index is None:
+            return v, None
+        return v, possible_moves[desired_move_index]
+    else:
+        v = float('inf')
+        for j in range(len(potential_spots)):
+            cur_board = Board.Board(potential_spots[j], not board.player_turn)
+            alpha_beta_results = alphabeta(cur_board, depth - 1, alpha, beta, True)
+
+            if v != min(v, alpha_beta_results[0]):
+                v = min(v, alpha_beta_results[0])
+                desired_move_index = j
+                beta = min(beta, v)
+            if beta <= alpha:
+                break
+        if desired_move_index is None:
+            return v, None
+        return v, possible_moves[desired_move_index]
+
 
 start_time = time.time()
 
@@ -146,6 +200,7 @@ DISCOUNT_FACTOR = .2 #pick this (start low  [above 0] then gradually go to 1)
 NUM_STATES = len(state_array)
 NUM_GAMES_TO_PLAY = 100
 PLAYER_ID = True
+ALPHA_BETA_DEPTH = 3
 
 q_array = [[]for j in range(NUM_STATES)]
 q_array_states = [[] for j in range(NUM_STATES)]
@@ -173,18 +228,21 @@ for j in range(NUM_GAMES_TO_PLAY):
         own_last_state = get_states_from_boards_spots(state_array, [game_board.get_potential_spots_from_moves(None)],PLAYER_ID)[0]
         next_move = get_next_desired_move(game_board, state_array, q_array, q_array_states, PLAYER_ID)
         if next_move:
-            if j%10 == 0:
-                game_board.print_board()
-                print("")
+#             if j%10 == 0:
+#                 game_board.print_board()
+#                 print("")
             game_board.make_move(get_next_desired_move(game_board, state_array, q_array, q_array_states, PLAYER_ID))
             new_state = get_states_from_boards_spots(state_array, [game_board.get_potential_spots_from_moves(None)],PLAYER_ID)[0]
             game_move_counter[j] = game_move_counter[j] + 1
             move_counter = move_counter + 1
             if not game_board.is_game_over():
-                next_move = get_random_move(game_board)
+                
+                #next_move = get_random_move(game_board)
+                next_move = alphabeta(game_board, ALPHA_BETA_DEPTH, float('-inf'), float('inf'), True)[1]
+                
                 if next_move:
-                    if j%10 == 0:
-                        game_board.print_board()
+#                     if j%10 == 0:
+#                         game_board.print_board()
                     game_board.make_move(get_random_move(game_board))
                     game_move_counter[j] = game_move_counter[j] + 1
                     move_counter = move_counter + 1
