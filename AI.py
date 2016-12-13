@@ -193,14 +193,16 @@ for own_pieces in range(13):
                             state_array.append([own_pieces,opp_pieces, own_kings, opp_kings, own_side_edges, own_base])
 
 
-#print(len(state_array))
+print(len(state_array))
 
-LEARNING_RATE = .1  #pick this (maybe .1)
-DISCOUNT_FACTOR = .2 #pick this (start low  [above 0] then gradually go to 1)
+LEARNING_RATE = .01  #properly pick this
+DISCOUNT_FACTOR = .25 #properly pick this (start low  [above 0] then gradually go to 1)
 NUM_STATES = len(state_array)
-NUM_GAMES_TO_PLAY = 100
+NUM_GAMES_TO_PLAY = 500
 PLAYER_ID = True
 ALPHA_BETA_DEPTH = 3
+MOVE_LIMIT = 1000
+
 
 q_array = [[]for j in range(NUM_STATES)]
 q_array_states = [[] for j in range(NUM_STATES)]
@@ -218,6 +220,8 @@ value which is defined as max value in new states Q vector for any action
 win_counter = 0
 loss_counter = 0
 move_counter = 0
+move_limit_counter = 0
+old_move_limit_counter = 0
 game_move_counter =[0]*NUM_GAMES_TO_PLAY
 game_is_over = False
 for j in range(NUM_GAMES_TO_PLAY):
@@ -225,6 +229,7 @@ for j in range(NUM_GAMES_TO_PLAY):
     while not game_is_over:
         #print("test2 game: " + str(j))
         #if j>20:
+        
         own_last_state = get_states_from_boards_spots(state_array, [game_board.get_potential_spots_from_moves(None)],PLAYER_ID)[0]
         next_move = get_next_desired_move(game_board, state_array, q_array, q_array_states, PLAYER_ID)
         if next_move:
@@ -240,7 +245,7 @@ for j in range(NUM_GAMES_TO_PLAY):
                 #next_move = get_random_move(game_board)
                 next_move = alphabeta(game_board, ALPHA_BETA_DEPTH, float('-inf'), float('inf'), True)[1]
                 
-                if next_move:
+                if next_move and game_move_counter[j] < MOVE_LIMIT:
 #                     if j%10 == 0:
 #                         game_board.print_board()
                     game_board.make_move(get_random_move(game_board))
@@ -248,6 +253,8 @@ for j in range(NUM_GAMES_TO_PLAY):
                     move_counter = move_counter + 1
                 else:
                     game_is_over = True
+                    if game_move_counter[j] >= MOVE_LIMIT:
+                        move_limit_counter = move_limit_counter + 1
 
                 #game_board.make_move(opponent.get_next_move(game_board, not PLAYER_ID))
                 #if j > 20: 
@@ -261,18 +268,21 @@ for j in range(NUM_GAMES_TO_PLAY):
         else:
             game_is_over = True
     else:
-        game_board.print_board()
+        #game_board.print_board()
         #print(str(j+1) +  " Games played in "  + str(time.time()-start_time) + " seconds ")
         #print(get_number_of_pieces_and_kings(game_board.spots, PLAYER_ID))
         #print(get_number_of_pieces_and_kings(game_board.spots, not PLAYER_ID))
         if get_number_of_pieces_and_kings(game_board.spots, PLAYER_ID) == [0,0]:
-            print("Game lost!  Has been " + str(j+1) +  " Games played in "  + str(time.time()-start_time) + " seconds ")
+            print("Game lost!  Has been " + str(j+1) +  " games played in "  + str(time.time()-start_time) + " seconds ")
             loss_counter = loss_counter + 1
         elif get_number_of_pieces_and_kings(game_board.spots, not PLAYER_ID) == [0,0]:
             win_counter = win_counter + 1
-            print("Game won!  Has been " + str(j+1) +  " Games played in "  + str(time.time()-start_time) + " seconds ")
+            print("Game won!  Has been " + str(j+1) +  " games played in "  + str(time.time()-start_time) + " seconds ")
+        elif old_move_limit_counter != move_limit_counter:
+            print("Game exceeded move limit!  Has been " + str(j+1) +  " games played in "  + str(time.time()-start_time) + " seconds ")
+            old_move_limit_counter = move_limit_counter          
         else:
-            print("Game tied!  Has been " + str(j+1) +  " Games played in "  + str(time.time()-start_time) + " seconds ")
+            print("Game tied!  Has been " + str(j+1) +  " games played in "  + str(time.time()-start_time) + " seconds ")
         game_board.wipe_board()
         
 
@@ -298,6 +308,7 @@ print("Average time to play a game: " + str((float(time.time())- start_time)/ NU
 print("Games won :" + str(win_counter))
 print("Games lost : " + str(loss_counter))
 print("Games tied : " + str(NUM_GAMES_TO_PLAY-win_counter-loss_counter))
+print("Games exceeding move limit: " + str(move_limit_counter))
 print("Total number of moves made: " + str(move_counter))
 print("Average moves per game: " + str(float(move_counter)/NUM_GAMES_TO_PLAY))
 print("Maximum transitions for a state: " + str(max_transitions))
@@ -308,11 +319,11 @@ print("Average Transitions per state used: " + str(avg))
 
 sum_delta_moves_init = 0
 sum_delta_moves_final = 0
-for j in range(10):
+for j in range(25):
     sum_delta_moves_init = sum_delta_moves_init + game_move_counter[j]
-    sum_delta_moves_final = sum_delta_moves_final + game_move_counter[len(game_move_counter)-10 + j]
-sum_delta_moves_final = sum_delta_moves_final/10
-sum_delta_moves_init = sum_delta_moves_init/10
+    sum_delta_moves_final = sum_delta_moves_final + game_move_counter[len(game_move_counter)-25 + j]
+sum_delta_moves_final = sum_delta_moves_final/25
+sum_delta_moves_init = sum_delta_moves_init/25
 
-print("Average number of moves for first 10 games: " + str(sum_delta_moves_init))
-print("Average number of moves for the last 10 games: " + str(sum_delta_moves_final))
+print("Average number of moves for first 25 games: " + str(sum_delta_moves_init))
+print("Average number of moves for the last 25 games: " + str(sum_delta_moves_final))
