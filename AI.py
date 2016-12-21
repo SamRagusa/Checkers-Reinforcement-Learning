@@ -15,12 +15,12 @@ from math import floor, ceil
 As of now: 
 Characteristics = [own_pieces, opp_pieces, own_kings, opp_kings, own_edges, own_bottem]
 """
-def follows_rules(own_pieces, own_kings, opp_pieces, opp_kings, own_side_edges, own_base):
+def follows_rules(own_pieces, own_kings, opp_pieces, opp_kings, own_side_edges):
     if own_pieces + own_kings > 12 or own_pieces + own_kings < 0:
         return False
     if opp_pieces + opp_kings > 12 or opp_pieces + opp_kings < 0:
         return False
-    if own_side_edges + own_base > own_pieces + own_kings + 2:
+    if own_side_edges > own_pieces + own_kings + 2:
         return False
     return True
 
@@ -30,7 +30,7 @@ Format for a states piece_counter:
 [[own_pieces, opp_pieces, own_kings, opp_kings, own_edges, own_bottem], ...]
 """
 def get_states_from_boards_spots(state_array, boards_spots,player_id):
-    piece_counters = [[0,0,0,0,0,0] for j in range(len(boards_spots))] 
+    piece_counters = [[0,0,0,0,0] for j in range(len(boards_spots))] 
     for k in range(len(boards_spots)):
         for j in range(len(boards_spots[k])):
             for i in range(len(boards_spots[k][j])):
@@ -42,8 +42,8 @@ def get_states_from_boards_spots(state_array, boards_spots,player_id):
                         elif i==3 and j%2==1:
                             piece_counters[k][4] = piece_counters[k][4] + 1
                 
-                        if j==0:
-                            piece_counters[k][5] = piece_counters[k][5] + 1
+#                         if j==0:
+#                             piece_counters[k][5] = piece_counters[k][5] + 1
                         
     return [state_array.index(counters) for counters in piece_counters]
                                  
@@ -116,9 +116,9 @@ Reward for transitioning from state with state_info1 to state with state_info2
 """
 def reward_function(state_info1, state_info2):
     if state_info2[1] == 0 and state_info2[3] == 0:
-        return 1
+        return 5
     if state_info2[0] == 0 and state_info2[2] == 0:
-        return -1
+        return -5
     return .1*(state_info2[0]-state_info1[0] + 3*(state_info2[2]-state_info1[2])-(state_info2[1]-state_info1[1])-3*(state_info2[3]-state_info1[3]))
 
 
@@ -136,17 +136,17 @@ def is_terminal(board):
     return False
 
 
-def alphabeta(board, depth, alpha, beta, maximizing_player):
+def alphabeta(board, depth, alpha, beta, maximizing_player, player_id):
     if depth == 0:
         if is_terminal(board):
-            if get_number_of_pieces_and_kings(board.spots, not maximizing_player) == [0,0]:
+            if get_number_of_pieces_and_kings(board.spots, player_id) == [0,0]:
                 return float('inf'), None
-            elif get_number_of_pieces_and_kings(board.spots, maximizing_player) == [0,0]: #make sure not is used correctly
+            elif get_number_of_pieces_and_kings(board.spots, not player_id) == [0,0]: 
                 return float('-inf'), None
             else:
                 return 0, None
-        self_info = get_number_of_pieces_and_kings(board.spots, not maximizing_player)
-        opp_info = get_number_of_pieces_and_kings(board.spots, maximizing_player)
+        self_info = get_number_of_pieces_and_kings(board.spots, player_id)
+        opp_info = get_number_of_pieces_and_kings(board.spots, not player_id)
         return self_info[0] + 3*self_info[1] - (opp_info[0] + 3*opp_info[1]) , None
                 
     possible_moves = board.get_possible_next_moves()
@@ -156,7 +156,7 @@ def alphabeta(board, depth, alpha, beta, maximizing_player):
         v = float('-inf')
         for j in range(len(potential_spots)):
             cur_board = Board.Board(potential_spots[j], not board.player_turn)
-            alpha_beta_results = alphabeta(cur_board, depth - 1, alpha, beta, False)
+            alpha_beta_results = alphabeta(cur_board, depth - 1, alpha, beta, False, player_id)
             
             if v != max(v, alpha_beta_results[0]):
                 v = max(v, alpha_beta_results[0])
@@ -171,7 +171,7 @@ def alphabeta(board, depth, alpha, beta, maximizing_player):
         v = float('inf')
         for j in range(len(potential_spots)):
             cur_board = Board.Board(potential_spots[j], not board.player_turn)
-            alpha_beta_results = alphabeta(cur_board, depth - 1, alpha, beta, True)
+            alpha_beta_results = alphabeta(cur_board, depth - 1, alpha, beta, True, player_id)
 
             if v != min(v, alpha_beta_results[0]):
                 v = min(v, alpha_beta_results[0])
@@ -191,24 +191,23 @@ for own_pieces in range(13):
         for opp_pieces in range(13):
             for opp_kings in range(13):
                 for own_side_edges in range(9):
-                    for own_base in range(5):
-                        if follows_rules(own_pieces, own_kings, opp_pieces, opp_kings, own_side_edges, own_base):
-                            state_array.append([own_pieces,opp_pieces, own_kings, opp_kings, own_side_edges, own_base])
+                    if follows_rules(own_pieces, own_kings, opp_pieces, opp_kings, own_side_edges):
+                        state_array.append([own_pieces,opp_pieces, own_kings, opp_kings, own_side_edges])
 
 
-print(len(state_array))
+#print(len(state_array))
 
 LEARNING_RATE = .0000001  #properly pick this
 DISCOUNT_FACTOR = .3 #properly pick this (start low  [above 0] then gradually go to 1)
 NUM_STATES = len(state_array)
-NUM_GAMES_TO_PLAY = 1000
-NUM_GAMES_FOR_TESTING = 100 
+NUM_GAMES_TO_PLAY = 6000
+NUM_GAMES_FOR_TESTING = 1000
 PLAYER_ID = True
-ALPHA_BETA_DEPTH = 3
-MOVE_LIMIT = 1250
+ALPHA_BETA_DEPTH = 1
+MOVE_LIMIT = 1000
 TEST_MOVE_LIMIT = 2000
 TRAINING_RANDOM_MOVE_PROBABILITY = .1
-INTERVAL_ANALYSIS_SIZE = 5
+INTERVAL_ANALYSIS_SIZE = 25
 
 
 q_array = [[]for j in range(NUM_STATES)]
@@ -237,7 +236,7 @@ game_move_counter =[0]*NUM_GAMES_TO_PLAY
 game_move_limit_counter = [0]*ceil(NUM_GAMES_TO_PLAY / INTERVAL_ANALYSIS_SIZE)
 game_win_counter = [0]*ceil(NUM_GAMES_TO_PLAY/ INTERVAL_ANALYSIS_SIZE)
 game_loss_counter = [0]*ceil(NUM_GAMES_TO_PLAY / INTERVAL_ANALYSIS_SIZE)
-game_is_over = False
+#game_is_over = False  
 start_time = time.time()
 for j in range(NUM_GAMES_TO_PLAY):
     if j==NUM_GAMES_TO_PLAY - NUM_GAMES_FOR_TESTING:
@@ -267,7 +266,7 @@ for j in range(NUM_GAMES_TO_PLAY):
             game_move_counter[j] = game_move_counter[j] + 1
             move_counter = move_counter + 1
             if not game_board.is_game_over():
-                next_move = alphabeta(game_board, ALPHA_BETA_DEPTH, float('-inf'), float('inf'), True)[1]
+                next_move = alphabeta(game_board, ALPHA_BETA_DEPTH, float('-inf'), float('inf'), True, False)[1]
                 #next_move = get_random_move(game_board)
                 if next_move and (TRAINING_RANDOM_MOVE_PROBABILITY == 0 or game_move_counter[j] < MOVE_LIMIT):
 #                     if j%10 == 0:
@@ -310,7 +309,6 @@ for j in range(NUM_GAMES_TO_PLAY):
             game_is_over = True
     else:
         #game_board.print_board()
-        #print(str(j+1) +  " Games played in "  + str(time.time()-start_time) + " seconds ")
         #print(get_number_of_pieces_and_kings(game_board.spots, PLAYER_ID))
         #print(get_number_of_pieces_and_kings(game_board.spots, not PLAYER_ID))
         if get_number_of_pieces_and_kings(game_board.spots, PLAYER_ID) == [0,0]:
@@ -356,6 +354,9 @@ game_tie_counter = [int(INTERVAL_ANALYSIS_SIZE-game_loss_counter[j]-game_win_cou
 
 
 print("Training Information:")
+print("Learning rate: " + str(LEARNING_RATE))
+print("Discount factor: " + str(DISCOUNT_FACTOR))
+print("Alpha-Beta depth: " + str(ALPHA_BETA_DEPTH))
 print("Random move probability: " + str(TRAINING_RANDOM_MOVE_PROBABILITY))
 print("Total time to play " + str(NUM_GAMES_TO_PLAY - NUM_GAMES_FOR_TESTING) + " games: " + str(training_time))
 print("Average time to play a game: " + str(training_time / (NUM_GAMES_TO_PLAY - NUM_GAMES_FOR_TESTING)))
@@ -380,9 +381,9 @@ print("Average time to play a game: " + str((float(time.time())- start_time)/ NU
 print("Games won: " + str(testing_win_counter))
 print("Games lost: " + str(testing_loss_counter))
 print("Games tied: " + str(NUM_GAMES_FOR_TESTING-testing_win_counter - testing_loss_counter))
-print("Wins over " + str(floor(NUM_GAMES_TO_PLAY/INTERVAL_ANALYSIS_SIZE)) + " game periods: " + str(game_win_counter))
-print("Losses over 10 game periods: " + str(game_loss_counter))
-print("Ties over 10 game periods: " + str(game_tie_counter))
+print("Wins over " + str(INTERVAL_ANALYSIS_SIZE) + " game intervals: " + str(game_win_counter))
+print("Losses over " + str(INTERVAL_ANALYSIS_SIZE) + " game intervals: " + str(game_loss_counter))
+print("Ties over " + str(INTERVAL_ANALYSIS_SIZE) + " game intervals: " + str(game_tie_counter))    
 
 sum_delta_moves_init = 0
 sum_delta_moves_final = 0
