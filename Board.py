@@ -9,14 +9,15 @@ which is showing the piece at [x1,x2] goes to [x2,y2] then [x3,y3] as one move
 """
 
 
-import math, random, copy, time
+import math
+import copy
+import time
 
 
-
-"""
-The class for the game board for 8x8 checkers
-"""
 class Board:
+    """
+    A class to represent and play an 8x8 game of checkers.
+    """
     
     EMPTY_SPOT = 0
     P1 = 1
@@ -26,7 +27,11 @@ class Board:
     BACKWARDS_PLAYER = P2
     
     
-    def __init__(self, old_spots=None, the_player_turn=True): #maybe have default parameter so board is 8x8 by default but nxn if wanted
+    def __init__(self, old_spots=None, the_player_turn=True):
+        """
+        NOTE:
+        Maybe have default parameter so board is 8x8 by default but nxn if wanted.
+        """
         self.player_turn = the_player_turn 
         if old_spots is None:   
             self.spots = [[j,j,j,j] for j in [1,1,1,0,0,2,2,2]]
@@ -35,9 +40,21 @@ class Board:
 
 
     def wipe_board(self):
+        """
+        Resets the current configuration of the game board to the original 
+        starting position.
+        """
         self.spots = copy.deepcopy(Board().spots)
     
+    
     def is_game_over(self):
+        """
+        Finds out and returns weather the game currently being played is over or
+        not.
+        
+        IMPORTANT NOTE:
+        This function does not actually do it's job properly, it should be fixed to do so!
+        """
         p1_piece = False
         p2_piece = False
         for row in self.spots:
@@ -54,22 +71,31 @@ class Board:
 
 
     def not_spot(self, loc):
+        """
+        Finds out of the spot at the given location is an actual spot on the game board.
+        """
         if len(loc) == 0 or loc[0] < 0 or loc[0] > 7 or loc[1] < 0 or loc[1] > 3:
             return True
         return False
     
     
     def get_spot_info(self, loc):
+        """
+        Gets the information about the spot at the given location.
+        
+        NOTE:
+        Might want to not use this for the sake of computational time.
+        """
         return self.spots[int(loc[0])][int(loc[1])] #not sure about the int()'s
     
     
-    """
-    see's if there is a piece at that spot who's turn it is
-    
-    NOTE:
-    DON'T THINK I NEED ANYMORE, NOT CURRENTLY USED
-    """
-    def is_players_turn(self, spot_data):  #might want to make not need this function
+    def is_players_turn(self, spot_data):
+        """
+        See's if there is a piece at that spot who's turn it is.
+        
+        NOTE:
+        DON'T THINK I NEED ANYMORE, NOT CURRENTLY USED
+        """
         if self.player_turn == True:
             if spot_data == self.P1 or spot_data == self.P1_K:
                 return True
@@ -81,11 +107,11 @@ class Board:
             else:
                 return False
 
-    
-    """
-    NOTE: REALLY DON'T THINK I NEED, NOT CURRENTLY USED
-    """
+
     def is_players_piece(self, player_id, spot_data):
+        """
+        NOTE: REALLY DON'T THINK I NEED, NOT CURRENTLY USED
+        """
         if player_id and (spot_data==1 or spot_data == 3):
             return True
         elif not player_id and (spot_data == 2 or spot_data == 4):
@@ -94,6 +120,8 @@ class Board:
     
     
     def forward_n_locations(self, start_loc, n, backwards=False):
+        """
+        """
         if n % 2 == 0:
             temp1 = 0
             temp2 = 0
@@ -121,14 +149,13 @@ class Board:
         return answer
     
 
-    """
-    NOTES:
-    -NEED TO MAKE SURE WORKS
-    
-    PRE-CONDITION:
-    -start_loc is a location with a players piece
-    """
     def get_simple_moves(self, start_loc):
+        """    
+        Gets the possible moves a piece can make given that it does not capture any opponents pieces.
+        
+        PRE-CONDITION:
+        -start_loc is a location with a players piece
+        """
         if self.spots[start_loc[0]][start_loc[1]] > 2:
             next_locations = self.forward_n_locations(start_loc, 1)
             next_locations.extend(self.forward_n_locations(start_loc, 1, True))
@@ -137,7 +164,7 @@ class Board:
         else:
             next_locations = self.forward_n_locations(start_loc, 1)
         
-        
+
         possible_next_locations = []
 
         for location in next_locations:
@@ -148,6 +175,9 @@ class Board:
         return [[start_loc, end_spot] for end_spot in possible_next_locations]      
                 
     def get_capture_moves(self, start_loc, move_beginnings=None):
+        """
+        Recursively get all of the possible moves for a piece which involve capturing an opponent's piece.
+        """
         if move_beginnings is None:
             move_beginnings = [start_loc]
 
@@ -183,11 +213,13 @@ class Board:
         return answer
     
     
-    def get_possible_next_moves(self):        
+    def get_possible_next_moves(self):
+        """
+        """        
         answer = []
         for j in range(8):
             for i in range(4):
-                if (self.player_turn == True and (self.spots[j][i]== self.P1 or self.spots[j][i]== self.P1_K)) or (self.player_turn == False and (self.spots[j][i]== self.P2 or self.spots[j][i]== self.P2_K)):
+                if (self.player_turn == True and (self.spots[j][i] == self.P1 or self.spots[j][i] == self.P1_K)) or (self.player_turn == False and (self.spots[j][i] == self.P2 or self.spots[j][i] == self.P2_K)):
                     answer.extend(self.get_simple_moves([j, i]))
                     answer.extend(self.get_capture_moves([j, i]))
         
@@ -195,6 +227,10 @@ class Board:
     
     
     def make_move(self, move, switch_player_turn=True):
+        """
+        Makes a given move on the board, and (as long as is wanted) switches the indicator for
+        which players turn it is.
+        """
         if abs(move[0][0] - move[1][0]) == 2:
             for j in range(len(move)-1):
                 if move[j][0]%2 == 1:
@@ -224,11 +260,11 @@ class Board:
             self.player_turn = not self.player_turn
        
         
-    """
-    Get's the potential spots of the board if it makes the one of the given moves.
-    If moves is None then returns it's own spots
-    """
     def get_potential_spots_from_moves(self, moves):
+        """
+        Get's the potential spots for the board if it makes any of the given moves.
+        If moves is None then returns it's own current spots.
+        """
         if moves is None:
             return self.spots
         answer = []
@@ -240,13 +276,13 @@ class Board:
         return answer
         
     
-    """
-    Gets the symbol for what should be at a board location.
-    
-    NOTE:
-    -Should probably make this into a switch statement
-    """
     def get_symbol(self, location):
+        """
+        Gets the symbol for what should be at a board location.
+        
+        NOTE:
+        -Should probably make this into a switch statement
+        """
         if self.spots[location[0]][location[1]] == 0:
             return " "
         elif self.spots[location[0]][location[1]] == 1:
@@ -260,11 +296,17 @@ class Board:
     
 
     def get_small_string_for_board(self):
+        """
+        No longer in use.
+        """
         slist = ["".join(map(str,self.spots[j])) for j in range(8)]
         return str(self.player_turn) + ":" + "".join(slist)
     
     
     def print_board(self):
+        """
+        Prints a string representation of the current game board.
+        """
         norm_line = "|---|---|---|---|---|---|---|---|"
         print(norm_line)
         for j in range(8):
@@ -280,11 +322,10 @@ class Board:
             print(norm_line)            
 
         
-    """
-    OPTOMIZATION:
-    -this looks like it should be high priority in optomization
-    """
 def get_board_from_string(string):
+    """
+    No longer in use.
+    """
     answer = []
     if len(string) == 37:
         spot_info = map(int, list(string[5:]))
@@ -299,6 +340,12 @@ def get_board_from_string(string):
 
 
 def get_possible_states(start_board_string):
+    """
+    Starts from a traditional start position for the Checkers board, and gets a full list
+    of achievable states (configurations of the board) from the start state.
+    
+    Computational time is FAR too large, so the use of this function is currently not possible.
+    """
     start_time = time.time()
     to_connect = [start_board_string]
     connected = []

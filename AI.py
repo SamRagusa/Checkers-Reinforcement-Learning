@@ -11,11 +11,11 @@ from math import floor, ceil
 #import matplotlib.pyplot as plt
 
 
-"""
-As of now: 
-Characteristics = [own_pieces, opp_pieces, own_kings, opp_kings, own_edges, own_bottem]
-"""
 def follows_rules(own_pieces, own_kings, opp_pieces, opp_kings, own_side_edges):
+    """
+    As of now: 
+    Characteristics = [own_pieces, opp_pieces, own_kings, opp_kings, own_edges]
+    """
     if own_pieces + own_kings > 12 or own_pieces + own_kings < 0:
         return False
     if opp_pieces + opp_kings > 12 or opp_pieces + opp_kings < 0:
@@ -25,11 +25,11 @@ def follows_rules(own_pieces, own_kings, opp_pieces, opp_kings, own_side_edges):
     return True
 
 
-"""
-Format for a states piece_counter:
-[[own_pieces, opp_pieces, own_kings, opp_kings, own_edges, own_bottem], ...]
-"""
 def get_states_from_boards_spots(state_array, boards_spots,player_id):
+    """
+    Format for a states piece_counter:
+    [[own_pieces, opp_pieces, own_kings, opp_kings, own_edges], ...]
+    """
     piece_counters = [[0,0,0,0,0] for j in range(len(boards_spots))] 
     for k in range(len(boards_spots)):
         for j in range(len(boards_spots[k])):
@@ -48,12 +48,12 @@ def get_states_from_boards_spots(state_array, boards_spots,player_id):
     return [state_array.index(counters) for counters in piece_counters]
                                  
 
-"""
-Notes:
--Currently using "optomistic initial conditions"
--should be done but haven't checked carefully
-"""
 def get_desired_transition_between_states(q_array, q_array_states, cur_state, possible_state_array,random_move_probability=0):
+    """
+    Notes:
+    -Currently using "optimistic initial conditions"
+    -should be done but haven't checked carefully
+    """
     done_transitions = []
     for state in possible_state_array:
         if state not in done_transitions:
@@ -75,7 +75,8 @@ def get_desired_transition_between_states(q_array, q_array_states, cur_state, po
 
 
 def get_next_desired_move(board, state_array, q_array, q_array_states, player_id, random_move_probability = 0):
-    
+    """
+    """
     possible_next_moves = board.get_possible_next_moves()
     #possible_next_board_spots = board.get_potential_spots_from_moves(possible_next_moves)
     possible_next_states = get_states_from_boards_spots(state_array, board.get_potential_spots_from_moves(possible_next_moves), player_id)
@@ -93,6 +94,10 @@ def get_next_desired_move(board, state_array, q_array, q_array_states, player_id
         return []
 
 def get_number_of_pieces_and_kings(spots, player_id):
+    """
+    Gets the number of pieces and the number of kings that a given user has on the board configuration
+    represented in the given spots.
+    """
     if player_id:
         piece = 1
         king = 3
@@ -111,10 +116,10 @@ def get_number_of_pieces_and_kings(spots, player_id):
     return [piece_counter,king_counter]
 
 
-"""
-Reward for transitioning from state with state_info1 to state with state_info2
-"""
 def reward_function(state_info1, state_info2):
+    """
+    Reward for transitioning from state with state_info1 to state with state_info2.
+    """
     if state_info2[1] == 0 and state_info2[3] == 0:
         return 5
     if state_info2[0] == 0 and state_info2[2] == 0:
@@ -123,6 +128,9 @@ def reward_function(state_info1, state_info2):
 
 
 def get_random_move(board):
+    """
+    Gets a random next move that can be taken from the current configuration of the Board given.
+    """
     possible_moves = board.get_possible_next_moves()
     if possible_moves:
         return possible_moves[random.randint(0,len(possible_moves)-1)]
@@ -131,12 +139,16 @@ def get_random_move(board):
 
 
 def is_terminal(board):
+    """
+    """
     if not board.get_possible_next_moves():
         return True
     return False
 
 
 def alphabeta(board, depth, alpha, beta, maximizing_player, player_id):
+    """
+    """
     if depth == 0:
         if is_terminal(board):
             if get_number_of_pieces_and_kings(board.spots, player_id) == [0,0]:
@@ -244,6 +256,7 @@ for j in range(NUM_GAMES_TO_PLAY):
         TRAINING_RANDOM_MOVE_PROBABILITY = 0
         training_time = time.time() - start_time
         start_time = time.time()
+        #ALPHA_BETA_DEPTH = 2
     testing_counter = 0
     game_is_over = False
     while not game_is_over:
