@@ -51,23 +51,10 @@ class Board:
         """
         Finds out and returns weather the game currently being played is over or
         not.
-        
-        IMPORTANT NOTE:
-        This function does not actually do it's job properly, it should be fixed to do so!
         """
-        p1_piece = False
-        p2_piece = False
-        for row in self.spots:
-            for element in row:
-                if not p1_piece and (element == 1 or element == 3):
-                    p1_piece = True
-                    if p2_piece:
-                        return False
-                if not p2_piece and (element == 2 or element == 4):
-                    p2_piece = True
-                    if p1_piece:
-                        return False
-        return True
+        if not self.get_possible_next_moves():
+            return True
+        return False
 
 
     def not_spot(self, loc):
