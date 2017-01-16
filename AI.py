@@ -50,7 +50,7 @@ class Q_Learning_AI(Player):
         A) when not training also don't look for/add currently unknown states
         B) do this by having an instance variable saying if it's testing or training
         C) and let a function set that parameter
-    2) 
+    2) (Think this is done) Add state attributes for center of mass of both opponent and self (vert, and maybe also horz)
     3) create set method for random move probability and learning rate
     4) handle the rewards function which is coded as if the function were already defined
     """
@@ -65,9 +65,14 @@ class Q_Learning_AI(Player):
                 for opp_pieces in range(13):
                     for opp_kings in range(13):
                         for own_side_edges in range(9):
-                            if self.follows_rules(own_pieces, own_kings, opp_pieces, opp_kings, own_side_edges):
-                                self.state_array.append([own_pieces,opp_pieces, own_kings, opp_kings, own_side_edges])
-        
+                            for own_vert_center_mass in range(8):
+                                #for own_horz_center_mass in range(4):
+                                for opp_vert_center_mass in range(8):
+                                    #for opp_horz_center_mass in range(4):
+                                    if self.follows_rules(own_pieces, own_kings, opp_pieces, opp_kings, own_side_edges):
+                                        #self.state_array.append([own_pieces,opp_pieces, own_kings, opp_kings, own_side_edges, own_vert_center_mass, own_horz_center_mass, opp_vert_center_mass, opp_horz_center_mass])
+                                        self.state_array.append([own_pieces,opp_pieces, own_kings, opp_kings, own_side_edges, own_vert_center_mass, opp_vert_center_mass])
+        print(len(self.state_array))
         self.q_array = [[]for j in range(len(self.state_array))]
         self.q_array_states = [[] for j in range(len(self.state_array))]
         self.num_states = len(self.state_array)
@@ -81,13 +86,20 @@ class Q_Learning_AI(Player):
     
 
     def set_random_move_probability(self, probability):
+        """
+        Sets the AI's random move probability
+        """
         self.random_move_probability = probability
     
 
     def follows_rules(self, own_pieces, own_kings, opp_pieces, opp_kings, own_side_edges):
         """
+        NOTE:
+        1) Don't think this is needed anymore
+        
         As of now: 
-        Characteristics = [own_pieces, opp_pieces, own_kings, opp_kings, own_edges]
+        Characteristics to look at = (own_pieces, opp_pieces, own_kings, opp_kings, own_edges)
+        Maybe take in that array instead of the parameters individually
         """
         if own_pieces + own_kings > 12 or own_pieces + own_kings < 0:
             return False
@@ -101,20 +113,58 @@ class Q_Learning_AI(Player):
     def get_states_from_boards_spots(self, boards_spots):
         """
         Format for a states piece_counter:
-        [[own_pieces, opp_pieces, own_kings, opp_kings, own_edges], ...]
+        [[own_pieces, opp_pieces, own_kings, opp_kings, own_edges, own_vert_center_mass, opp_vert_center_mass], ...]
         """
-        piece_counters = [[0,0,0,0,0] for j in range(len(boards_spots))] 
+        piece_counters = [[0,0,0,0,0,0,0] for j in range(len(boards_spots))] 
+        #piece_counters = [[0,0,0,0,0,0,0,0,0] for j in range(len(boards_spots))] 
         for k in range(len(boards_spots)):
             for j in range(len(boards_spots[k])):
                 for i in range(len(boards_spots[k][j])):
                     if boards_spots[k][j][i] != 0:
+                    
                         piece_counters[k][boards_spots[k][j][i]-1] = piece_counters[k][boards_spots[k][j][i]-1] + 1
                         if (self.player_id and (boards_spots[k][j][i] == 1 or boards_spots[k][j][i] == 3)) or (not self.player_id and (boards_spots[k][j][i] == 2 or boards_spots[k][j][i] == 4)):
                             if i==0 and j%2==0:
                                 piece_counters[k][4] = piece_counters[k][4] + 1
                             elif i==3 and j%2==1:
                                 piece_counters[k][4] = piece_counters[k][4] + 1
-                        
+                                
+                            piece_counters[k][5] = piece_counters[k][5] + j#%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (2)
+                            #piece_counters[k][6] = piece_counters[k][6] + i
+                        else: 
+                            #piece_counters[k][7] = piece_counters[k][7] + j#%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (2)
+                            #piece_counters[k][8] = piece_counters[k][8] + i
+                            piece_counters[k][6] = piece_counters[k][6] + j
+            
+            ############## Use the better method for division typed as int that I think exists
+            """
+            if piece_counters[k][0] + piece_counters[k][2] != 0: #%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (2)
+                piece_counters[k][5] = int(piece_counters[k][5] / (piece_counters[k][0] + piece_counters[k][2]))
+                piece_counters[k][6] = int(piece_counters[k][6] / (piece_counters[k][0] + piece_counters[k][2]))
+            else:
+                piece_counters[k][5] = 0
+                piece_counters[k][6] = 0
+            if piece_counters[k][1] + piece_counters[k][3] != 0:
+                piece_counters[k][7] = int(piece_counters[k][7] / (piece_counters[k][1] + piece_counters[k][3]))
+                piece_counters[k][8] = int(piece_counters[k][8] / (piece_counters[k][1] + piece_counters[k][3]))
+            else:
+                piece_counters[k][7] = 0
+                piece_counters[k][8] = 0
+            """
+            
+            if piece_counters[k][0] + piece_counters[k][2] != 0: #%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (2)
+                piece_counters[k][5] = int(piece_counters[k][5] / (piece_counters[k][0] + piece_counters[k][2]))
+                #piece_counters[k][6] = int(piece_counters[k][6] / (piece_counters[k][0] + piece_counters[k][2]))
+            else:
+                piece_counters[k][5] = 0
+                #piece_counters[k][6] = 0
+            if piece_counters[k][1] + piece_counters[k][3] != 0:
+                piece_counters[k][6] = int(piece_counters[k][6] / (piece_counters[k][1] + piece_counters[k][3]))
+                #piece_counters[k][8] = int(piece_counters[k][8] / (piece_counters[k][1] + piece_counters[k][3]))
+            else:
+                piece_counters[k][6] = 0
+                #piece_counters[k][8] = 0
+    
         return [self.state_array.index(counters) for counters in piece_counters]
                                  
 
@@ -135,7 +185,7 @@ class Q_Learning_AI(Player):
         if random != 0 and random.random() < self.random_move_probability:
             try:
                 return done_transitions[random.randint(0, len(done_transitions)-1)]
-            except:
+            except:   #Make sure that you don't need to specify the exception
                 return []
     
         try:
@@ -154,6 +204,7 @@ class Q_Learning_AI(Player):
         
         self.pre_last_move_state = None
         self.post_last_move_state = None
+
 
     def get_q_array_info(self):
         """
@@ -194,7 +245,7 @@ class Q_Learning_AI(Player):
         TODO:
         1) Approach this with algorithm similar to how minimax works
             a) look for set of transitions from (I think) current state of length depth by doing minimax
-            b) Might also use alpha-beta pruining
+            b) Might also use alpha-beta pruning
             
         NOTES:
         1) depth is not actually looking ahead in possible moves, but actually simulating something similar (hopefully similar)
@@ -224,15 +275,18 @@ class Q_Learning_AI(Player):
         
         self.pre_last_move_state = self.get_states_from_boards_spots([self.board.spots])[0]#%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (1)
         
+        
         possible_next_moves = self.board.get_possible_next_moves()
         possible_next_states = self.get_states_from_boards_spots(self.board.get_potential_spots_from_moves(possible_next_moves))
     
-        self.post_last_move_state = self.get_desired_transition_between_states(possible_next_states) 
+        
+        #self.post_last_move_state = get_desired_transition_between_states(self.q_array, self.q_array_states, get_states_from_boards_spots([self.board.spots])[0], possible_next_states, self.random_move_probability) 
+        self.post_last_move_state = self.get_desired_transition_between_states(possible_next_states)   #######not sure if change from above code is correct, but should be
         
         
         
         considered_moves = []
-        for j in range(len(possible_next_states)):   #probably optimize this by using built in python functions
+        for j in range(len(possible_next_states)):  
             if possible_next_states[j] == self.post_last_move_state:
                 considered_moves.append(possible_next_moves[j])
                 
@@ -346,7 +400,7 @@ class Alpha_beta(Player):
 def play_n_games(player1, player2, num_games, move_limit):
     """
     TO-DO:
-    1) Add options for returing data about the games
+    1) Add options for returning data about the games
 
     PRECONDITIONS:
     1) Both players play legal moves only
@@ -355,12 +409,11 @@ def play_n_games(player1, player2, num_games, move_limit):
     player1.set_board(game_board)
     player2.set_board(game_board)
     
-    players_move = player1  #############################MAKE SURE THAT PLAYERS_MOVE IS A POINTER NOT BECOMING A COPY OF THAT OBJECT OR POINTER TO WHAT IT'S POINTING TO#################################################
+    players_move = player1 
     for j in range(num_games):
         move_counter = 0
         while not game_board.is_game_over() and move_counter < move_limit:
             #game_board.print_board()
-            #print(move_counter)
             game_board.make_move(players_move.get_next_move())
             move_counter = move_counter + 1
             if players_move is player1:
@@ -383,20 +436,20 @@ def play_n_games(player1, player2, num_games, move_limit):
 
 LEARNING_RATE = .05  #properly pick this
 DISCOUNT_FACTOR = .3
-NUM_GAMES_TO_TRAIN = 10
-NUM_GAMES_TO_TEST = 20
+NUM_GAMES_TO_TRAIN = 5
+NUM_GAMES_TO_TEST = 50
 TRAINING_RANDOM_MOVE_PROBABILITY = .1
 ALPHA_BETA_DEPTH = 1
-TRAINING_MOVE_LIMIT = 500
-TESTING_MOVE_LIMIT = 1000
+TRAINING_MOVE_LIMIT = 200
+TESTING_MOVE_LIMIT = 200
 PLAYER1 = Q_Learning_AI(True, LEARNING_RATE, DISCOUNT_FACTOR, TRAINING_RANDOM_MOVE_PROBABILITY)
 PLAYER2 = Alpha_beta(False, ALPHA_BETA_DEPTH)
 
-
-play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TRAIN, TRAINING_MOVE_LIMIT)
-print(PLAYER1.get_q_array_info())
-
-PLAYER1.set_random_move_probability(0)
+for j in range(100):
+    play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TRAIN, TRAINING_MOVE_LIMIT)
+    print(PLAYER1.get_q_array_info())
+    print(str((1+j)*NUM_GAMES_TO_TRAIN))
+    
 
 play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TEST, TESTING_MOVE_LIMIT)
 print(PLAYER1.get_q_array_info())
