@@ -5,10 +5,8 @@ Created on Dec 3, 2016
 '''
 
 
-import random, copy, time
+import random
 from game import Board
-from math import floor, ceil
-import itertools
 
 class Player:
     """
@@ -25,9 +23,6 @@ class Player:
         """
         """
         pass
-        
-
-
 
 
 def reward_function(state_info1, state_info2):
@@ -43,7 +38,6 @@ def reward_function(state_info1, state_info2):
     if state_info2[0] == 0 and state_info2[2] == 0:
         return -10
     return state_info2[0]-state_info1[0] + 2*(state_info2[2]-state_info1[2])-(state_info2[1]-state_info1[1])-2*(state_info2[3]-state_info1[3])
-
 
 
 class Q_Learning_AI(Player):
@@ -62,28 +56,6 @@ class Q_Learning_AI(Player):
     def __init__(self, the_player_id, the_learning_rate, the_discount_factor, the_random_move_probability=0, the_board=None):
         """
         """
-        
-        """
-        self.state_array = []
-        for own_pieces in range(13):
-            for own_kings in range(13):
-                for opp_pieces in range(13):
-                    for opp_kings in range(13):
-                        for own_side_edges in range(9):
-                            for own_vert_center_mass in range(8):
-                                #for own_horz_center_mass in range(4):
-                                for opp_vert_center_mass in range(8):
-                                    #for opp_horz_center_mass in range(4):
-                                    if self.follows_rules(own_pieces, own_kings, opp_pieces, opp_kings, own_side_edges):
-                                        #self.state_array.append([own_pieces,opp_pieces, own_kings, opp_kings, own_side_edges, own_vert_center_mass, own_horz_center_mass, opp_vert_center_mass, opp_horz_center_mass])
-                                        self.state_array.append([own_pieces,opp_pieces, own_kings, opp_kings, own_side_edges, own_vert_center_mass, opp_vert_center_mass])
-        
-        print(len(self.state_array))
-        self.q_array = [[]for j in range(len(self.state_array))]
-        self.q_array_states = [[] for j in range(len(self.state_array))]
-        self.num_states = len(self.state_array)
-        """
-        
         self.transitions = {}
         self.random_move_probability = the_random_move_probability  #May want to rename this
         self.learning_rate = the_learning_rate    
@@ -95,6 +67,9 @@ class Q_Learning_AI(Player):
     
 
     def set_random_move_probability(self, probability):
+        """
+        Sets the random move probability for the AI.
+        """
         self.random_move_probability = probability
     
 
@@ -117,9 +92,8 @@ class Q_Learning_AI(Player):
     def get_states_from_boards_spots(self, boards_spots):
         """
         Format for a states piece_counter:
-        [[own_pieces, opp_pieces, own_kings, opp_kings, own_edges, own_vert_center_mass, own_horz_center_mass, opp_vert_center_mass, opp_horz_center_mass], ...]
+        [[own_pieces, opp_pieces, own_kings, opp_kings, own_edges, own_vert_center_mass, opp_vert_center_mass], ...]
         """
-        #piece_counters = [[0,0,0,0,0,0,0]]*len(boards_spots)
         piece_counters = [[0,0,0,0,0,0,0] for j in range(len(boards_spots))] 
         #piece_counters = [[0,0,0,0,0,0,0,0,0] for j in range(len(boards_spots))] 
         for k in range(len(boards_spots)):
@@ -194,22 +168,14 @@ class Q_Learning_AI(Player):
         try:
             reverse_dict = {j:i for i,j in done_transitions.items()}
             return reverse_dict[max(reverse_dict)]
-            #return done_transitions[done_transitions.index(max(map(self.transitions.get, done_transitions)))]
         except:
             return []    
    
    
     def game_completed(self):
-        """
-        IMPORTANT NOTE:
-        1) FIX THIS FOR NEW DYNAMIC SIZED TRANSITION DICTIONARY
-        """
-        #%%%%%%%%% FOR DYNAMIC!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        index_in_q_array = self.q_array_states[self.pre_last_move_state].index(self.post_last_move_state)
-        cur_state = self.get_states_from_board_spots([self.board.spots])[0]
-    
-        self.q_array[self.pre_last_move_state][index_in_q_array] = self.q_array[self.pre_last_move_state][index_in_q_array] + self.learning_rate * (reward_function(self.state_array[self.pre_last_move_state], self.state_array[cur_state])- self.q_array[self.pre_last_move_state][index_in_q_array])
+        cur_state = self.get_states_from_boards_spots([self.board.spots])[0]
+        transition = (self.pre_last_move_state ,self.post_last_move_state)
+        self.transitions[transition] = self.transitions[transition] + self.learning_rate * (reward_function(transition[0],cur_state)- self.transitions[transition])
         
         self.pre_last_move_state = None
         self.post_last_move_state = None
@@ -219,7 +185,8 @@ class Q_Learning_AI(Player):
         """
         returns in form: [min_trans, max_trans, avg_trans, total_trans, min_val, max_val, avg_val, total_states_used]
         
-        IMPORTANT NOTE:  this does not work anymore
+        IMPORTANT NOTE:
+        1) This does not work anymore and will likely be deleted
         """
         the_sum = 0
         num_states_used = 0
@@ -248,6 +215,9 @@ class Q_Learning_AI(Player):
         
     def get_optimal_potential_value(self, depth):
         """
+        Look ahead a given number of moves and return the maximal value associated 
+        with a move of that depth. 
+        
         STRATEGY:
         1) Look forward in (actual) own transition states.  
         2) Look at board as self being the opponent and look forward in that situations transition states
@@ -284,7 +254,6 @@ class Q_Learning_AI(Player):
         """
         
         if self.pre_last_move_state is not None:#%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (1)
-            #index_in_q_array = self.q_array_states[self.pre_last_move_state].index(self.post_last_move_state)
             cur_state = self.get_states_from_boards_spots([self.board.spots])[0]
     
             transition = (self.pre_last_move_state ,self.post_last_move_state)
@@ -303,12 +272,12 @@ class Q_Learning_AI(Player):
         
         #self.post_last_move_state = get_desired_transition_between_states(self.q_array, self.q_array_states, get_states_from_boards_spots([self.board.spots])[0], possible_next_states, self.random_move_probability)
         temp = self.get_desired_transition_between_states(possible_next_states)
-        self.post_last_move_state = temp[1]   #######not sure if change from above code is correct, but should be
+        self.post_last_move_state = temp[1]   
         
         
         
         considered_moves = []
-        for j in range(len(possible_next_states)):   ###########OPTOMIZE THIS BY USING BUILT IN PYTHON FUNCTIONS##########################
+        for j in range(len(possible_next_states)):   ###########OPTOMIZE THIS BY USING BUILT IN PYTHON FUNCTIONS##########
             if tuple(possible_next_states[j]) == self.post_last_move_state:
                 considered_moves.append(possible_next_moves[j])
                 
@@ -321,47 +290,40 @@ class Q_Learning_AI(Player):
         except ValueError:
             return []
             
-            
 
-def get_number_of_pieces_and_kings(spots, player_id):
+def get_number_of_pieces_and_kings(spots, player_id=None):
     """
-    Gets the number of pieces and the number of kings that a given user has on the board configuration
-    represented in the given spots.
-    
-    NOTES:
-    1) should improve this to not need player_id and do both players at the same time
+    Gets the number of pieces and the number of kings that each player has on the current 
+    board configuration represented in the given spots. The format of the function with defaults is:
+    [P1_pieces, P2_pieces, P1_kings, P2_kings]
+    and if given a player_id:
+    [player_pieces, player_kings]
     """
-    if player_id:
-        piece = 1
-        king = 3
-    else:
-        piece = 2 
-        king = 4
-        
-    piece_counter = 0
-    king_counter = 0
+    piece_counter = [0,0,0,0]  
     for row in spots:
         for element in row:
-            if element == piece:
-                piece_counter = piece_counter + 1
-            elif element == king:
-                king_counter = king_counter + 1
-    return [piece_counter,king_counter]
-
-
-
-def is_terminal(board):
-    """
-    """
-    if not board.get_possible_next_moves():
-        return True
-    return False
+            if element != 0:
+                piece_counter[element-1] = piece_counter[element-1] + 1
+    
+    if player_id == True:
+        return [piece_counter[0], piece_counter[2]]
+    elif player_id == False:
+        return [piece_counter[1], piece_counter[3]]
+    else:
+        return piece_counter
     
 
 class Alpha_beta(Player):
     """
+    A class representing a checkers playing AI using Alpha-Beta pruning.   
+    
+    TO DO:
+    1) Be able to take in any reward function (for when not win/loss) 
     """
+    
     def __init__(self, the_player_id, the_depth, the_board=None):
+        """
+        """
         self.board = the_board
         self.depth = the_depth
         self.player_id = the_player_id
@@ -370,17 +332,16 @@ class Alpha_beta(Player):
         """
         """
         if depth == 0:
-            if is_terminal(self.board):
+            if self.board.is_game_over():
                 if get_number_of_pieces_and_kings(self.board.spots, self.player_id) == [0,0]:
                     return float('inf'), None
                 elif get_number_of_pieces_and_kings(self.board.spots, not self.player_id) == [0,0]: 
                     return float('-inf'), None
                 else:
                     return 0, None
-            self_info = get_number_of_pieces_and_kings(self.board.spots, self.player_id)
-            opp_info = get_number_of_pieces_and_kings(self.board.spots, not self.player_id)
-            return self_info[0] + 2*self_info[1] - (opp_info[0] + 2*opp_info[1]) , None
-                
+            players_info = get_number_of_pieces_and_kings(self.board.spots)
+            return  players_info[0] + 2 * players_info[2] - (players_info[1] + 2 * players_info[3]), None
+
         possible_moves = self.board.get_possible_next_moves()
         potential_spots = self.board.get_potential_spots_from_moves(possible_moves)
         desired_move_index = None
@@ -390,7 +351,7 @@ class Alpha_beta(Player):
                 cur_board = Board.Board(potential_spots[j], not board.player_turn)
                 alpha_beta_results = self.alpha_beta(cur_board, depth - 1, alpha, beta, False)
             
-                if v != max(v, alpha_beta_results[0]):
+                if v != max(v, alpha_beta_results[0]):  ###WHY DIDN'T I USE GREATER THAN?
                     v = max(v, alpha_beta_results[0])
                     alpha = max(alpha, v)
                     desired_move_index = j
@@ -405,7 +366,7 @@ class Alpha_beta(Player):
                 cur_board = Board.Board(potential_spots[j], not self.board.player_turn)
                 alpha_beta_results = self.alpha_beta(cur_board, depth - 1, alpha, beta, True)
 
-                if v != min(v, alpha_beta_results[0]):
+                if v != min(v, alpha_beta_results[0]):   ###WHY DIDN'T I USE LESS THAN?
                     v = min(v, alpha_beta_results[0])
                     desired_move_index = j
                     beta = min(beta, v)
@@ -416,26 +377,27 @@ class Alpha_beta(Player):
             return v, possible_moves[desired_move_index]
     
     def get_next_move(self):
-        """
-        """
-        #print(self.board.print_board())
         return self.alpha_beta(self.board, self.depth, float('-inf'), float('inf'), self.player_id)[1]
         
 
-
 def play_n_games(player1, player2, num_games, move_limit):
     """
-    TO-DO:
-    1) Add options for returning data about the games
- 
+    Plays a specified amount of games of checkers between player1, who goes first,
+    and player2, who goes second.  The games will be stopped after the given limit on moves.
+    This function outputs an array of arrays formatted as followed (only showing game 1's info):
+    [[game1_outcome, num_moves, num_own_pieces, num_opp_pieces, num_own_kings, num_opp_kings]...]
+    gameN_outcome is 0 if player1 won, 1 if lost, 2 if tied, and 3 if hit move limit.
+
     PRECONDITIONS:
-    1) Both players play legal moves only
+    1)Both player1 and player2 inherit the Player class
+    2)Both player1 and player2 play legal moves only
     """
     game_board = Board.Board()
     player1.set_board(game_board)
     player2.set_board(game_board)
      
     players_move = player1
+    outcome_counter = [[-1,-1,-1,-1,-1,-1] for j in range(num_games)] 
     for j in range(num_games):
         move_counter = 0
         while not game_board.is_game_over() and move_counter < move_limit:
@@ -448,26 +410,82 @@ def play_n_games(player1, player2, num_games, move_limit):
             else:
                 players_move = player1
         else:
-            if get_number_of_pieces_and_kings(game_board.spots, True) == [0,0]:
-                print("Player 2 won game #" + str(j + 1) + " in " + str(move_counter) + " turns!")
-            elif get_number_of_pieces_and_kings(game_board.spots, False) == [0,0]:
-                print("Player 1 won game #" + str(j + 1) + " in " + str(move_counter) + " turns!")
+            piece_counter = get_number_of_pieces_and_kings(game_board.spots)
+            #print(piece_counter)
+            if piece_counter[0] != 0 or piece_counter[2] != 0:
+                if piece_counter[1] != 0 or piece_counter[3] != 0:
+                    if move_counter == move_limit:
+                        outcome_counter[j][0] = 3
+                    else:
+                        outcome_counter[j][0] = 2
+                    if (j+1)%10==0:
+                        print("Tie game for game #" + str(j + 1) + " in " + str(move_counter) + " turns!")
+                else:
+                    outcome_counter[j][0] = 0
+                    if (j+1)%10==0:
+                        print("Player 1 won game #" + str(j + 1) + " in " + str(move_counter) + " turns!")
             else:
-                print("Tie game for game #" + str(j + 1) + " in " + str(move_counter) + " turns!")
+                outcome_counter[j][0] = 1
+                if (j+1)%10==0:
+                    print("Player 2 won game #" + str(j + 1) + " in " + str(move_counter) + " turns!")
+                
+            outcome_counter[j][1] = move_counter
+            outcome_counter[j][2] = piece_counter[0]
+            outcome_counter[j][3] = piece_counter[1]
+            outcome_counter[j][4] = piece_counter[2]
+            outcome_counter[j][5] = piece_counter[3]
+             
+            player1.game_completed()
+            player2.game_completed()
             #game_board.print_board()
             game_board.wipe_board()
+     
+    return outcome_counter
+
+
+def pretty_outcome_display(outcomes):
+    """
+    Prints the outcome of play_n_games in a easy to understand format.
+    
+    TO DO:
+    1) Add functionality for pieces in each game
+    2) Add ability to take other strings for AI info and display it
+    """
+    game_wins = [0,0,0,0]
+    total_moves = 0
+    max_moves_made = float("-inf")
+    min_moves_made = float("inf")
+    for outcome in outcomes:
+        total_moves = total_moves + outcome[1]
+        if outcome[1] < min_moves_made:
+            min_moves_made = outcome[1]
+        if outcome[1] > max_moves_made:
+            max_moves_made = outcome[1]
+        
+        game_wins[outcome[0]] = game_wins[outcome[0]] + 1
+    
+    print("Games Played: ".ljust(35), len(outcomes))
+    print("Player 1 wins: ".ljust(35), game_wins[0])
+    print("Player 2 wins: ".ljust(35), game_wins[1])
+    print("Games exceeded move limit: ".ljust(35), game_wins[3])
+    print("Games tied: ".ljust(35), game_wins[2])
+    print("Total moves made: ".ljust(35), total_moves)  
+    print("Average moves made: ".ljust(35), total_moves/len(outcomes))
+    print("Max moves made: ".ljust(35), max_moves_made)
+    print("Min moves made: ".ljust(35), min_moves_made)
+    
 
 
 
 
-LEARNING_RATE = .01  #properly pick this
+
 DISCOUNT_FACTOR = .3
-NUM_GAMES_TO_TRAIN = 200
+NUM_GAMES_TO_TRAIN = 2000
 NUM_TRAINING_ROUNDS = 1
-NUM_GAMES_TO_TEST = 50
+NUM_GAMES_TO_TEST = 500
 TRAINING_RANDOM_MOVE_PROBABILITY = .1
 ALPHA_BETA_DEPTH = 1
-TRAINING_MOVE_LIMIT = 1000
+TRAINING_MOVE_LIMIT = 1250
 TESTING_MOVE_LIMIT = 2000
 PLAYER1 = Q_Learning_AI(True, LEARNING_RATE, DISCOUNT_FACTOR, TRAINING_RANDOM_MOVE_PROBABILITY)
 PLAYER2 = Alpha_beta(False, ALPHA_BETA_DEPTH)
@@ -475,12 +493,9 @@ PLAYER2 = Alpha_beta(False, ALPHA_BETA_DEPTH)
 
 
 for j in range(NUM_TRAINING_ROUNDS):
-    play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TRAIN, TRAINING_MOVE_LIMIT)
-    #print(PLAYER1.get_q_array_info())
-    print(str((1+j)*NUM_GAMES_TO_TRAIN))
+    pretty_outcome_display(play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TRAIN, TRAINING_MOVE_LIMIT))
     
  
-play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TEST, TESTING_MOVE_LIMIT)
-#print(PLAYER1.get_q_array_info())
-print(len(PLAYER1.transitions))
+pretty_outcome_display(play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TEST, TESTING_MOVE_LIMIT))
+print("Number of transitions: ", len(PLAYER1.transitions))
 
