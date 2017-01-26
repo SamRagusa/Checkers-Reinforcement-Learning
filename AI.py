@@ -5,6 +5,8 @@ Created on Dec 3, 2016
 '''
 
 import random
+import json
+from ast import literal_eval
 from game import Board
 
 class Player:
@@ -61,11 +63,10 @@ class Q_Learning_AI(Player):
     """
 
 
-    def __init__(self, the_player_id, the_learning_rate, the_discount_factor, the_random_move_probability=0, the_board=None):
+    def __init__(self, the_player_id, the_learning_rate, the_discount_factor, info_location=None, the_random_move_probability=0, the_board=None):
         """
         Initialize the instance variables to be stored by the AI. 
         """
-        self.transitions = {}
         self.random_move_probability = the_random_move_probability  #May want to rename this
         self.learning_rate = the_learning_rate    
         self.discount_factor = the_discount_factor
@@ -73,7 +74,10 @@ class Q_Learning_AI(Player):
         self.board = the_board
         self.pre_last_move_state = None
         self.post_last_move_state = None 
-    
+        if not info_location is None:
+            self.load_transition_information(info_location)
+        else:
+            self.transitions = {}
 
     def set_random_move_probability(self, probability):
         """
@@ -213,8 +217,25 @@ class Q_Learning_AI(Player):
         print("Average value for transition: ".ljust(35), info[2])
         print("Maximum value for transition: ".ljust(35), info[3])
         print("Minimum value for transition: ".ljust(35), info[4])
-        
     
+        
+    def save_transition_information(self, file_name="data.json"):
+        """
+        Saves the current transitions information to a specified
+        json file. 
+        """
+        with open(file_name, 'w') as fp:
+            json.dump({str(k): v for k,v in self.transitions.items()}, fp)
+        
+        
+    def load_transition_information(self, file_name):
+        """
+        Loads transitions information from a desired json file.
+        """
+        with open(file_name, 'r') as fp:
+            self.transitions = {literal_eval(k): v for k,v in json.load(fp).items()}
+        
+        
     def get_optimal_potential_value(self, depth):
         """
         Look ahead a given number of moves and return the maximal value associated 
@@ -481,17 +502,15 @@ def pretty_outcome_display(outcomes):
 
 LEARNING_RATE = .001  #properly pick this
 DISCOUNT_FACTOR = .3
-NUM_GAMES_TO_TRAIN = 500
+NUM_GAMES_TO_TRAIN = 100
 NUM_TRAINING_ROUNDS = 1
-NUM_GAMES_TO_TEST = 100
+NUM_GAMES_TO_TEST = 50
 TRAINING_RANDOM_MOVE_PROBABILITY = .25
 ALPHA_BETA_DEPTH = 1
 TRAINING_MOVE_LIMIT = 1250 
 TESTING_MOVE_LIMIT = 2000
-PLAYER1 = Q_Learning_AI(True, LEARNING_RATE, DISCOUNT_FACTOR, TRAINING_RANDOM_MOVE_PROBABILITY)
+PLAYER1 = Q_Learning_AI(True, LEARNING_RATE, DISCOUNT_FACTOR,"data.json" ,TRAINING_RANDOM_MOVE_PROBABILITY)
 PLAYER2 = Alpha_beta(False, ALPHA_BETA_DEPTH)
-
-
 
 for j in range(NUM_TRAINING_ROUNDS):
     pretty_outcome_display(play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TRAIN, TRAINING_MOVE_LIMIT))
@@ -502,3 +521,4 @@ for j in range(NUM_TRAINING_ROUNDS):
 pretty_outcome_display(play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TEST, TESTING_MOVE_LIMIT))
 PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
  
+PLAYER1.save_transition_information()
