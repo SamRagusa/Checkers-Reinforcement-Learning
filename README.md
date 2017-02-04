@@ -21,9 +21,10 @@ In the above equation, U and K represent the number of uncrowned pieces and numb
 The reinforcement learning AI is based in the ideas of Q-learning.  Since creating and training a Q-table for every possible board configuration takes immense computational power, a set of characteristics defining a set of states was created such that each board configuration exists in one and only one of these states.
 
 
-### State Characteristics
+#### State Characteristics
 
 The characteristics of the states are as follows:
+
 1. Number of own uncrowned pieces
 2. Number of opponent uncrowned pieces
 3. Number of own kings
@@ -34,7 +35,7 @@ The characteristics of the states are as follows:
 In numbers 5 and 6 the center of mass is calculated with an uncrowned piece having the same mass as a king.
 
 
-### Dynamically Discovering Transitions
+#### Dynamically Discovering Transitions
 
 Since knowing the state of a board is not enough information to figure out it's possible transitions to other states, initializing a traditional Q-Table is not possible, and if it were, would require a very large amount of memory.  With this in mind I instead dynamically create/discover a set of possible transitions between states during training, which I store as keys in a dictionary.
 
@@ -43,7 +44,7 @@ NOTE:
 May want to specify what the values corresponding to the keys represent.
 -->   
 
-### Updating Transition Values
+#### Updating Transition Values
 
 <!---
 STUFF FOR EQUATATIONS
@@ -70,6 +71,6 @@ If the game board is terminal, then the AI will be notified and will apply the f
 ![equation](http://latex.codecogs.com/gif.latex?T%28s_n%2Cs_%7Bn%2B1%7D%29%5Cleftarrow%5Chspace%7B1pt%7DT%28s_n%2Cs_%7Bn%2B1%7D%29%2B%5Calpha%28R%28s_n%2Cs_%7Bn%2B2%7D%29%29)
 
 
-### Picking Moves
+#### Picking Moves
 
 When it is the reinforcement learning AI's turn, it looks at a list of possible moves it could make, and if their respective state transitions are not yet known, it adds them to the dictionary of transitions.  Then it will chose to do one of two things, based on a specified probability.  The first is that it could chose a move at random, this is used during training so that transitions other then the current highest valued transition will still be trained.  If the learning AI does not move randomly, it will chose the move who's state transition has the highest value associated with it.
