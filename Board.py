@@ -29,6 +29,9 @@ class Board:
     
     def __init__(self, old_spots=None, the_player_turn=True):
         """
+        Initializes a new instance of the Board class.  Unless specified otherwise, 
+        the board will be created with a start board configuration.
+        
         NOTE:
         Maybe have default parameter so board is 8x8 by default but nxn if wanted.
         """
@@ -76,45 +79,18 @@ class Board:
         return self.spots[int(loc[0])][int(loc[1])] #not sure about the int()'s
     
     
-    def is_players_turn(self, spot_data):
-        """
-        See's if there is a piece at that spot who's turn it is.
-        
-        NOTE:
-        DON'T THINK I NEED ANYMORE, NOT CURRENTLY USED
-        """
-        if self.player_turn == True:
-            if spot_data == self.P1 or spot_data == self.P1_K:
-                return True
-            else:
-                return False
-        else:
-            if spot_data == self.P2 or spot_data == self.P2_K:
-                return True
-            else:
-                return False
-
-
-    def is_players_piece(self, player_id, spot_data):
-        """
-        NOTE: REALLY DON'T THINK I NEED, NOT CURRENTLY USED
-        """
-        if player_id and (spot_data==1 or spot_data == 3):
-            return True
-        elif not player_id and (spot_data == 2 or spot_data == 4):
-            return True
-        return False
-    
-    
     def forward_n_locations(self, start_loc, n, backwards=False):
         """
+        Gets the locations of moving a piece from it's current location diagonally
+        in the same
+        #############################################################
         """
         if n % 2 == 0:
             temp1 = 0
             temp2 = 0
         elif start_loc[0] % 2 == 0:
             temp1 = 0
-            temp2 = 1
+            temp2 = 1 
         else:
             temp1 = 1
             temp2 = 0
@@ -202,6 +178,7 @@ class Board:
     
     def get_possible_next_moves(self):
         """
+        Gets the possible moves that can be made from the current board configuration.
         """        
         answer = []
         for j in range(8):
@@ -331,7 +308,8 @@ def get_possible_states(start_board_string):
     Starts from a traditional start position for the Checkers board, and gets a full list
     of achievable states (configurations of the board) from the start state.
     
-    Computational time is FAR too large, so the use of this function is currently not possible.
+    IMPORTANT NOTE: Computational time is FAR too large, 
+    so the use of this function is currently not possible.
     """
     start_time = time.time()
     to_connect = [start_board_string]

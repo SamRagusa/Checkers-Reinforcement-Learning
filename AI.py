@@ -11,6 +11,10 @@ from game import Board
 
 class Player:
     """
+    A class to be inherited by any class representing a checkers player.
+    This is used so that other functions can be written for more general use,
+    without worry of crashing (e.g. play_n_games).
+    
     NOTES:
     1) Create set playerID method
     """
@@ -52,6 +56,8 @@ def reward_function(state_info1, state_info2):
 
 class Q_Learning_AI(Player):
     """
+    ######################################################################
+    
     TO-DO:
     1) add ability to train or not train when wanted
         A) when not training also don't look for/add currently unknown states
@@ -88,8 +94,12 @@ class Q_Learning_AI(Player):
 
     def get_states_from_boards_spots(self, boards_spots):
         """
-        Format for a states piece_counter:
-        [[own_pieces, opp_pieces, own_kings, opp_kings, own_edges, own_vert_center_mass, opp_vert_center_mass], ...]
+        Gets an array of tuples from the given set of board spots,
+        each tuple representing the characteristics which define the
+        state the board is in. 
+        
+        Format of returned data:
+        [(own_pieces, opp_pieces, own_kings, opp_kings, own_edges, own_vert_center_mass, opp_vert_center_mass), ...]
         """
         piece_counters = [[0,0,0,0,0,0,0] for j in range(len(boards_spots))] 
         #piece_counters = [[0,0,0,0,0,0,0,0,0] for j in range(len(boards_spots))] 
@@ -178,7 +188,7 @@ class Q_Learning_AI(Player):
         """
         cur_state = self.get_states_from_boards_spots([self.board.spots])[0]
         transition = (self.pre_last_move_state ,self.post_last_move_state)
-        self.transitions[transition] = self.transitions[transition] + self.learning_rate * (reward_function(transition[0],cur_state)- self.transitions[transition])
+        self.transitions[transition] = self.transitions[transition] + self.learning_rate * reward_function(transition[0],cur_state)
         
         self.pre_last_move_state = None
         self.post_last_move_state = None
@@ -192,20 +202,22 @@ class Q_Learning_AI(Player):
         
         NOTES: should use a dictionary here so this runs much faster 
         """
-        start_of_transitions = []
+        start_of_transitions = {}
         max_value = float("-inf")
         min_value = float("inf")
         total_value = 0
         for k,v in self.transitions.items():
-            if k[0] not in start_of_transitions:
-                start_of_transitions.append(k[0])
+            if start_of_transitions.get(k[0]) is None:
+                start_of_transitions.update({k[0]:0})
+            #if k[0] not in start_of_transitions:
+                #start_of_transitions.append(k[0])
             if v > max_value:
                 max_value = v
             if v < min_value:
                 min_value = v
             total_value = total_value + v
             
-        return [len(self.transitions), len(start_of_transitions), int(total_value/len(self.transitions)), max_value, min_value]
+        return [len(self.transitions), len(start_of_transitions), float(total_value/len(self.transitions)), max_value, min_value]
     
     
     def print_transition_information(self, info):
@@ -249,7 +261,7 @@ class Q_Learning_AI(Player):
         TODO:
         1) Approach this with algorithm similar to how minimax works
             a) look for set of transitions from (I think) current state of length depth by doing minimax
-            b) Might also use alpha-beta pruining
+            b) Might also use alpha-beta pruning
             
         NOTES:
         1) depth is not actually looking ahead in possible moves, but actually simulating something similar (hopefully similar)
@@ -283,7 +295,7 @@ class Q_Learning_AI(Player):
                 max_future_state = self.get_optimal_potential_value(1)
                 self.transitions[transition] = self.transitions[transition] + self.learning_rate * (reward_function(transition[0],cur_state)+ self.discount_factor* max_future_state - self.transitions[transition])
             except:#%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (1)
-                self.transitions[transition] = self.transitions[transition] + self.learning_rate * (reward_function(transition[0],cur_state)- self.transitions[transition])
+                self.transitions[transition] = self.transitions[transition] + self.learning_rate * (reward_function(transition[0],cur_state))
         
         
         self.pre_last_move_state = self.get_states_from_boards_spots([self.board.spots])[0]#%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (1)
@@ -502,23 +514,34 @@ def pretty_outcome_display(outcomes):
 
 LEARNING_RATE = .001  #properly pick this
 DISCOUNT_FACTOR = .3
-NUM_GAMES_TO_TRAIN = 100
-NUM_TRAINING_ROUNDS = 1
-NUM_GAMES_TO_TEST = 50
+NUM_GAMES_TO_TRAIN = 1000
+NUM_TRAINING_ROUNDS = 2
+NUM_GAMES_TO_TEST = 5
 TRAINING_RANDOM_MOVE_PROBABILITY = .25
 ALPHA_BETA_DEPTH = 1
 TRAINING_MOVE_LIMIT = 1250 
 TESTING_MOVE_LIMIT = 2000
-PLAYER1 = Q_Learning_AI(True, LEARNING_RATE, DISCOUNT_FACTOR,"data.json" ,TRAINING_RANDOM_MOVE_PROBABILITY)
+PLAYER1 = Q_Learning_AI(True, LEARNING_RATE, DISCOUNT_FACTOR,info_location="data.json",the_random_move_probability=TRAINING_RANDOM_MOVE_PROBABILITY)
 PLAYER2 = Alpha_beta(False, ALPHA_BETA_DEPTH)
+PLAYER3 = Alpha_beta(False, 2)
+PLAYER4 = Alpha_beta(False, 3)
 
 for j in range(NUM_TRAINING_ROUNDS):
     pretty_outcome_display(play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TRAIN, TRAINING_MOVE_LIMIT))
     PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
     print(" ")
     
+PLAYER1.set_random_move_probability(0)
  
 pretty_outcome_display(play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TEST, TESTING_MOVE_LIMIT))
+PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
+print(" ")
+
+pretty_outcome_display(play_n_games(PLAYER1, PLAYER3, NUM_GAMES_TO_TEST, TESTING_MOVE_LIMIT))
+PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
+print(" ")
+
+pretty_outcome_display(play_n_games(PLAYER1, PLAYER4, NUM_GAMES_TO_TEST, TESTING_MOVE_LIMIT))
 PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
  
 PLAYER1.save_transition_information()
