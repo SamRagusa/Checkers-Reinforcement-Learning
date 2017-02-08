@@ -76,14 +76,13 @@ class Board:
         NOTE:
         Might want to not use this for the sake of computational time.
         """
-        return self.spots[int(loc[0])][int(loc[1])] #not sure about the int()'s
+        return self.spots[loc[0]][loc[1]]
     
     
     def forward_n_locations(self, start_loc, n, backwards=False):
         """
-        Gets the locations of moving a piece from it's current location diagonally
-        in the same
-        #############################################################
+        Gets the locations possible for moving a piece from a given location diagonally
+        forward (or backwards if wanted) a given number of times(without directional change midway).  
         """
         if n % 2 == 0:
             temp1 = 0
@@ -132,7 +131,7 @@ class Board:
 
         for location in next_locations:
             if len(location) != 0:
-                if self.spots[int(location[0])][int(location[1])] == self.EMPTY_SPOT:   ##DO NOT KNOW IF int() ARE NEEDED
+                if self.spots[location[0]][location[1]] == self.EMPTY_SPOT:
                     possible_next_locations.append(location)
             
         return [[start_loc, end_spot] for end_spot in possible_next_locations]      
@@ -145,19 +144,20 @@ class Board:
             move_beginnings = [start_loc]
 
         answer = []
-        
-        if self.spots[int(start_loc[0])][int(start_loc[1])] > 2:  #not sure about the int()'s
+        if self.spots[start_loc[0]][start_loc[1]] > 2:  
             next1 = self.forward_n_locations(start_loc, 1)
             next2 = self.forward_n_locations(start_loc,2)
             next1.extend(self.forward_n_locations(start_loc, 1, True))
             next2.extend(self.forward_n_locations(start_loc, 2, True))
-        elif self.spots[int(start_loc[0])][int(start_loc[1])] == self.BACKWARDS_PLAYER:#not sure about the int()'s
+        elif self.spots[start_loc[0]][start_loc[1]] == self.BACKWARDS_PLAYER:
             next1 = self.forward_n_locations(start_loc, 1, True)
             next2 = self.forward_n_locations(start_loc,2, True)
         else:
             next1 = self.forward_n_locations(start_loc, 1)
             next2 = self.forward_n_locations(start_loc,2)
-            
+        
+        
+        answer_length = 0
         for j in range(len(next1)):
             if (not self.not_spot(next2[j])) and (not self.not_spot(next1[j])) : #if both spots exist
                 if self.get_spot_info(next1[j]) != 0 and self.get_spot_info(next1[j])%2 != self.get_spot_info(start_loc)%2:  #if next spot is opponent
@@ -166,28 +166,41 @@ class Board:
                         temp_move1.append(next2[j])
                         temp_move2 = [start_loc, next2[j]]
 
-                        answer.append(temp_move1)
-
+                        #answer.append(temp_move1)
+                        
+                        answer_length = len(answer)
+                        
+                        
                         if self.get_spot_info(start_loc)!=1 or next2[j][0] != 7:
                             if self.get_spot_info(start_loc)!=2 or next2[j][0] != 0: 
                                 temp_board = Board(copy.deepcopy(self.spots), copy.deepcopy(self.player_turn))
                                 temp_board.make_move(temp_move2, False)
                                 answer.extend(temp_board.get_capture_moves(temp_move2[1], temp_move1))
+                                
+                        if len(answer) == answer_length:
+                            answer.append(temp_move1)
+                            
         return answer
     
     
     def get_possible_next_moves(self):
         """
         Gets the possible moves that can be made from the current board configuration.
-        """        
-        answer = []
+        """
+        simple_moves = []        
+        capture_moves = []
+
         for j in range(8):
             for i in range(4):
                 if (self.player_turn == True and (self.spots[j][i] == self.P1 or self.spots[j][i] == self.P1_K)) or (self.player_turn == False and (self.spots[j][i] == self.P2 or self.spots[j][i] == self.P2_K)):
-                    answer.extend(self.get_simple_moves([j, i]))
-                    answer.extend(self.get_capture_moves([j, i]))
+                    if len(capture_moves) == 0:
+                        simple_moves.extend(self.get_simple_moves([j, i]))
+                        
+                    capture_moves.extend(self.get_capture_moves([j, i]))
         
-        return answer
+        if len(capture_moves) != 0:
+            return capture_moves
+        return simple_moves
     
     
     def make_move(self, move, switch_player_turn=True):
@@ -208,17 +221,17 @@ class Board:
                     else:
                         middle_y = move[j][1]
                         
-                self.spots[int((move[j][0] + move[j+1][0])/2)][int(middle_y)] = self.EMPTY_SPOT #not sure about the int()'s 
+                self.spots[int((move[j][0] + move[j+1][0])/2)][middle_y] = self.EMPTY_SPOT
                 
                 
-        self.spots[int(move[len(move)-1][0])][int(move[len(move)-1][1])] = int(self.spots[int(move[0][0])][int(move[0][1])])   #not sure about the int()'s
-        if int(move[len(move)-1][0]) == 7 and self.spots[int(move[len(move)-1][0])][int(move[len(move)-1][1])] == self.P1:
-            self.spots[int(move[len(move)-1][0])][int(move[len(move)-1][1])] = self.P1_K
-        elif int(move[len(move)-1][0]) == 0 and self.spots[int(move[len(move)-1][0])][int(move[len(move)-1][1])] == self.P2:
-            self.spots[int(move[len(move)-1][0])][int(move[len(move)-1][1])] = self.P2_K
+        self.spots[move[len(move)-1][0]][move[len(move)-1][1]] = self.spots[move[0][0]][move[0][1]]
+        if move[len(move)-1][0] == 7 and self.spots[move[len(move)-1][0]][move[len(move)-1][1]] == self.P1:
+            self.spots[move[len(move)-1][0]][move[len(move)-1][1]] = self.P1_K
+        elif move[len(move)-1][0] == 0 and self.spots[move[len(move)-1][0]][move[len(move)-1][1]] == self.P2:
+            self.spots[move[len(move)-1][0]][move[len(move)-1][1]] = self.P2_K
         else:
-            self.spots[int(move[len(move)-1][0])][int(move[len(move)-1][1])] = self.spots[int(move[0][0])][int(move[0][1])]   #not sure about the int()'s
-        self.spots[int(move[0][0])][int(move[0][1])] = self.EMPTY_SPOT   #not sure about the int()'s
+            self.spots[move[len(move)-1][0]][move[len(move)-1][1]] = self.spots[move[0][0]][move[0][1]]
+        self.spots[move[0][0]][move[0][1]] = self.EMPTY_SPOT
                 
         if switch_player_turn:
             self.player_turn = not self.player_turn
@@ -235,17 +248,14 @@ class Board:
         for move in moves:
             original_spots = copy.deepcopy(self.spots)
             self.make_move(move, switch_player_turn=False)
-            answer.append(copy.deepcopy(self.spots))
-            self.spots = copy.deepcopy(original_spots)
+            answer.append(copy.deepcopy(self.spots))  # or this one
+            self.spots = copy.deepcopy(original_spots)##########################################DON'T THINK THIS DEEPCOPY IS NEEDED
         return answer
         
     
     def get_symbol(self, location):
         """
         Gets the symbol for what should be at a board location.
-        
-        NOTE:
-        -Should probably make this into a switch statement
         """
         if self.spots[location[0]][location[1]] == 0:
             return " "

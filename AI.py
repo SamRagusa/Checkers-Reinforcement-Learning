@@ -8,6 +8,7 @@ import random
 import json
 from ast import literal_eval
 from game import Board
+import matplotlib.pyplot as plt
 
 class Player:
     """
@@ -48,9 +49,9 @@ def reward_function(state_info1, state_info2):
     2) should give some kind of negative for tieing
     """
     if state_info2[1] == 0 and state_info2[3] == 0:
-        return 10
+        return 12
     if state_info2[0] == 0 and state_info2[2] == 0:
-        return -10
+        return -12
     return state_info2[0]-state_info1[0] + 2*(state_info2[2]-state_info1[2])-(state_info2[1]-state_info1[1])-2*(state_info2[3]-state_info1[3])
 
 
@@ -200,7 +201,8 @@ class Q_Learning_AI(Player):
         It returns the information in the form:
         [num_transitions, num_start_of_transitions, avg_value, max_value, min_value]
         
-        NOTES: should use a dictionary here so this runs much faster 
+        NOTES:
+        1) Should use a dictionary here so this runs much faster 
         """
         start_of_transitions = {}
         max_value = float("-inf")
@@ -387,7 +389,7 @@ class Alpha_beta(Player):
                 cur_board = Board.Board(potential_spots[j], not board.player_turn)
                 alpha_beta_results = self.alpha_beta(cur_board, depth - 1, alpha, beta, False)
             
-                if v != max(v, alpha_beta_results[0]):  ###WHY DIDN'T I USE GREATER THAN?
+                if v != max(v, alpha_beta_results[0]):  ###WHY DIDN'T I USE GREATER THAN?#############################
                     v = max(v, alpha_beta_results[0])
                     alpha = max(alpha, v)
                     desired_move_index = j
@@ -402,7 +404,7 @@ class Alpha_beta(Player):
                 cur_board = Board.Board(potential_spots[j], not self.board.player_turn)
                 alpha_beta_results = self.alpha_beta(cur_board, depth - 1, alpha, beta, True)
 
-                if v != min(v, alpha_beta_results[0]):   ###WHY DIDN'T I USE LESS THAN?
+                if v != min(v, alpha_beta_results[0]):   ###WHY DIDN'T I USE LESS THAN?##################################
                     v = min(v, alpha_beta_results[0])
                     desired_move_index = j
                     beta = min(beta, v)
@@ -435,9 +437,12 @@ def play_n_games(player1, player2, num_games, move_limit):
     players_move = player1
     outcome_counter = [[-1,-1,-1,-1,-1,-1] for j in range(num_games)] 
     for j in range(num_games):
+        #print(j)
         move_counter = 0
         while not game_board.is_game_over() and move_counter < move_limit:
             #game_board.print_board()
+            #print(game_board.get_possible_next_moves())
+            
             game_board.make_move(players_move.get_next_move())
              
             move_counter = move_counter + 1
@@ -510,29 +515,78 @@ def pretty_outcome_display(outcomes):
     print("Min moves made: ".ljust(35), min_moves_made)
     
 
+def plot_end_game_information(outcome, interval, title="End of Game Results"):
+    """
+    """
+    player1_wins = [0 for j in range(int(len(outcome)/interval))]
+    player2_wins = [0 for j in range(int(len(outcome)/interval))]
+    ties = [0 for j in range(int(len(outcome)/interval))]
+    move_limit = [0 for j in range(int(len(outcome)/interval))]
+    
+    for j in range(int(len(outcome)/interval)):
+        for i in range(interval):
+            if outcome[j*interval + i][0] == 0:
+                player1_wins[j] = player1_wins[j] + 1
+            elif outcome[j*interval + i][0] == 1:
+                player2_wins[j] = player2_wins[j] + 1
+            elif outcome[j*interval + i][0] == 2:
+                ties[j] = ties[j] + 1
+            else:
+                move_limit[j] = move_limit[j] + 1
+                
+    plt.figure(title)
+    
+    p1_win_graph, = plt.plot(player1_wins, label = "Player 1 wins")
+    p2_win_graph, = plt.plot(player2_wins, label = "Player 2 wins")
+    tie_graph, = plt.plot(ties, label = "Ties")
+    move_limit_graph, = plt.plot(move_limit, label = "Move limit reached")
+    
+    plt.ylabel("Occurance per " +str(interval) + " games")
+    plt.xlabel("Interval")
+    
+    plt.legend(handles=[p1_win_graph, p2_win_graph, tie_graph, move_limit_graph])
+    #plt.show()
+
 
 
 LEARNING_RATE = .001  #properly pick this
 DISCOUNT_FACTOR = .3
-NUM_GAMES_TO_TRAIN = 1000
+NUM_GAMES_TO_TRAIN = 1
 NUM_TRAINING_ROUNDS = 2
-NUM_GAMES_TO_TEST = 5
+NUM_VALIDATION_GAMES = 50
+NUM_GAMES_TO_TEST = 1
 TRAINING_RANDOM_MOVE_PROBABILITY = .25
-ALPHA_BETA_DEPTH = 1
-TRAINING_MOVE_LIMIT = 1250 
+ALPHA_BETA_DEPTH = 6
+TRAINING_MOVE_LIMIT = 800
+VALIDATION_MOVE_LIMIT = 1000
 TESTING_MOVE_LIMIT = 2000
-PLAYER1 = Q_Learning_AI(True, LEARNING_RATE, DISCOUNT_FACTOR,info_location="data.json",the_random_move_probability=TRAINING_RANDOM_MOVE_PROBABILITY)
+PLAYER1 = Q_Learning_AI(True, LEARNING_RATE, DISCOUNT_FACTOR, info_location="data.json", the_random_move_probability=TRAINING_RANDOM_MOVE_PROBABILITY)
 PLAYER2 = Alpha_beta(False, ALPHA_BETA_DEPTH)
-PLAYER3 = Alpha_beta(False, 2)
+PLAYER3 = Alpha_beta(False, 1)
 PLAYER4 = Alpha_beta(False, 3)
 
+
+#PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
+
+training_info = []
+validation_info = []
 for j in range(NUM_TRAINING_ROUNDS):
-    pretty_outcome_display(play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TRAIN, TRAINING_MOVE_LIMIT))
+    training_info.extend(play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TRAIN, TRAINING_MOVE_LIMIT))
+    #PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
+    PLAYER1.set_random_move_probability(0)
+    validation_info.extend(play_n_games(PLAYER1, PLAYER3, NUM_VALIDATION_GAMES, VALIDATION_MOVE_LIMIT))
+    PLAYER1.set_random_move_probability(TRAINING_RANDOM_MOVE_PROBABILITY)
+    print("Round " + str(j+1) + " completed!")
     PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
-    print(" ")
-    
+
+  
+plot_end_game_information(training_info, 1, "Training Information")
+plot_end_game_information(validation_info, NUM_VALIDATION_GAMES, "Validation Information")
+plt.show()
+
+"""
 PLAYER1.set_random_move_probability(0)
- 
+
 pretty_outcome_display(play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TEST, TESTING_MOVE_LIMIT))
 PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
 print(" ")
@@ -543,5 +597,7 @@ print(" ")
 
 pretty_outcome_display(play_n_games(PLAYER1, PLAYER4, NUM_GAMES_TO_TEST, TESTING_MOVE_LIMIT))
 PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
- 
+"""
+
+
 PLAYER1.save_transition_information()
