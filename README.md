@@ -1,6 +1,6 @@
 ## Synopsis
 
-This code defines a checkers board, and the ability to officiate a game of checkers between two AI which are playing using the rules I played with as a child (will be changing it to traditional American rules shortly).  These rules are the same as American rules, but without requiring captures be made whenever possible.  Two AI are defined to compete in checkers, one based in reinforcement learning and one in alpha-beta pruning.  
+This code defines a checkers board, and the ability to officiate a game of checkers between two AI which are playing using the rules I played with as a child, which are the same as traditional American Checkers (English Droughts), except that a win can only be achieved by capturing all of the opponents pieces.  Two AI are defined to compete in checkers, one based in reinforcement learning and one in alpha-beta pruning.  
 
 
 ## Alpha-Beta Pruning AI
@@ -32,7 +32,7 @@ The characteristics of the states are as follows:
 5. Integer value of own vertical center of mass
 6. Integer value of opponent vertical center of mass
 
-In numbers 5 and 6 the center of mass is calculated with an uncrowned piece having the same mass as a king.
+For characteristics 5 and 6, the center of mass is calculated with an uncrowned piece having the same mass as a king.
 
 
 #### Dynamically Discovering Transitions
