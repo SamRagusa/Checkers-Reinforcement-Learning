@@ -1,6 +1,5 @@
 """
 @author: Sam Ragusa
-
 NOTES:
 -Should store moves as array of locations e.g.: [[x1,y1],[x2,y2],[x3,y3]]
 which is showing the piece at [x1,x2] goes to [x2,y2] then [x3,y3] as one move
@@ -12,19 +11,20 @@ which is showing the piece at [x1,x2] goes to [x2,y2] then [x3,y3] as one move
 import math
 import copy
 import time
-
+from functools import reduce
 
 class Board:
     """
     A class to represent and play an 8x8 game of checkers.
     """
-    
     EMPTY_SPOT = 0
     P1 = 1
     P2 = 2
     P1_K = 3
     P2_K = 4
     BACKWARDS_PLAYER = P2
+    HEIGHT = 8
+    WIDTH = 4
     
     
     def __init__(self, old_spots=None, the_player_turn=True):
@@ -37,17 +37,24 @@ class Board:
         """
         self.player_turn = the_player_turn 
         if old_spots is None:   
-            self.spots = [[j,j,j,j] for j in [1,1,1,0,0,2,2,2]]
+            self.spots = [[j,j,j,j] for j in [self.P1, self.P1, self.P1, self.EMPTY_SPOT, self.EMPTY_SPOT, self.P2, self.P2, self.P2]]
         else:
             self.spots = old_spots
 
 
-    def wipe_board(self):
+    def reset_board(self):
         """
         Resets the current configuration of the game board to the original 
         starting position.
         """
-        self.spots = copy.deepcopy(Board().spots)
+        self.spots = Board().spots
+        
+    
+    def empty_board(self):
+      """
+      Removes any pieces currently on the board and leaves the board with nothing but empty spots.
+      """
+      self.spots = [[j,j,j,j] for j in [self.EMPTY_SPOT]*self.HEIGHT]  #Make sure [self.EMPTY_SPOT]*self.HEIGHT] has no issues
     
     
     def is_game_over(self):
@@ -64,7 +71,7 @@ class Board:
         """
         Finds out of the spot at the given location is an actual spot on the game board.
         """
-        if len(loc) == 0 or loc[0] < 0 or loc[0] > 7 or loc[1] < 0 or loc[1] > 3:
+        if len(loc) == 0 or loc[0] < 0 or loc[0] > self.HEIGHT-1 or loc[1] < 0 or loc[1] > self.WIDTH-1:
             return True
         return False
     
@@ -135,14 +142,15 @@ class Board:
                     possible_next_locations.append(location)
             
         return [[start_loc, end_spot] for end_spot in possible_next_locations]      
-                
+           
+     
     def get_capture_moves(self, start_loc, move_beginnings=None):
         """
         Recursively get all of the possible moves for a piece which involve capturing an opponent's piece.
         """
         if move_beginnings is None:
             move_beginnings = [start_loc]
-
+            
         answer = []
         if self.spots[start_loc[0]][start_loc[1]] > 2:  
             next1 = self.forward_n_locations(start_loc, 1)
@@ -157,24 +165,23 @@ class Board:
             next2 = self.forward_n_locations(start_loc,2)
         
         
-        answer_length = 0
         for j in range(len(next1)):
             if (not self.not_spot(next2[j])) and (not self.not_spot(next1[j])) : #if both spots exist
-                if self.get_spot_info(next1[j]) != 0 and self.get_spot_info(next1[j])%2 != self.get_spot_info(start_loc)%2:  #if next spot is opponent
-                    if self.get_spot_info(next2[j]) == 0:  #if next next spot is empty
-                        temp_move1 = move_beginnings
+                if self.get_spot_info(next1[j]) != self.EMPTY_SPOT and self.get_spot_info(next1[j])%2 != self.get_spot_info(start_loc)%2:  #if next spot is opponent
+                    if self.get_spot_info(next2[j]) == self.EMPTY_SPOT:  #if next next spot is empty
+                        temp_move1 = copy.deepcopy(move_beginnings)
                         temp_move1.append(next2[j])
-                        temp_move2 = [start_loc, next2[j]]
-
-                        #answer.append(temp_move1)
                         
                         answer_length = len(answer)
                         
-                        
-                        if self.get_spot_info(start_loc)!=1 or next2[j][0] != 7:
-                            if self.get_spot_info(start_loc)!=2 or next2[j][0] != 0: 
-                                temp_board = Board(copy.deepcopy(self.spots), copy.deepcopy(self.player_turn))
+                        if self.get_spot_info(start_loc)!=self.P1 or next2[j][0] != self.HEIGHT-1:  #Was 7, should make sure this change is done correctly
+                            if self.get_spot_info(start_loc)!=self.P2 or next2[j][0] != 0: 
+
+                                temp_move2 = [start_loc, next2[j]]
+                                
+                                temp_board = Board(copy.deepcopy(self.spots), self.player_turn)
                                 temp_board.make_move(temp_move2, False)
+
                                 answer.extend(temp_board.get_capture_moves(temp_move2[1], temp_move1))
                                 
                         if len(answer) == answer_length:
@@ -182,25 +189,26 @@ class Board:
                             
         return answer
     
-    
+        
     def get_possible_next_moves(self):
         """
         Gets the possible moves that can be made from the current board configuration.
         """
-        simple_moves = []        
-        capture_moves = []
-
-        for j in range(8):
-            for i in range(4):
+        piece_locations = []
+        for j in range(self.HEIGHT):
+            for i in range(self.WIDTH):
                 if (self.player_turn == True and (self.spots[j][i] == self.P1 or self.spots[j][i] == self.P1_K)) or (self.player_turn == False and (self.spots[j][i] == self.P2 or self.spots[j][i] == self.P2_K)):
-                    if len(capture_moves) == 0:
-                        simple_moves.extend(self.get_simple_moves([j, i]))
-                        
-                    capture_moves.extend(self.get_capture_moves([j, i]))
-        
-        if len(capture_moves) != 0:
+                    piece_locations.append([j,i])
+                    
+        try:
+          capture_moves = list(reduce(lambda a,b: a+b, list(map(self.get_capture_moves, piece_locations)))) #CHECK IF OUTER LIST IS NECESSARY
+
+          if len(capture_moves) != 0:
             return capture_moves
-        return simple_moves
+
+          return list(reduce(lambda a,b: a+b, list(map(self.get_simple_moves, piece_locations)))) #CHECK IF OUTER LIST IS NECESSARY
+        except TypeError:
+          return []
     
     
     def make_move(self, move, switch_player_turn=True):
@@ -225,7 +233,7 @@ class Board:
                 
                 
         self.spots[move[len(move)-1][0]][move[len(move)-1][1]] = self.spots[move[0][0]][move[0][1]]
-        if move[len(move)-1][0] == 7 and self.spots[move[len(move)-1][0]][move[len(move)-1][1]] == self.P1:
+        if move[len(move)-1][0] == self.HEIGHT-1 and self.spots[move[len(move)-1][0]][move[len(move)-1][1]] == self.P1:
             self.spots[move[len(move)-1][0]][move[len(move)-1][1]] = self.P1_K
         elif move[len(move)-1][0] == 0 and self.spots[move[len(move)-1][0]][move[len(move)-1][1]] == self.P2:
             self.spots[move[len(move)-1][0]][move[len(move)-1][1]] = self.P2_K
@@ -236,11 +244,14 @@ class Board:
         if switch_player_turn:
             self.player_turn = not self.player_turn
        
-        
+
     def get_potential_spots_from_moves(self, moves):
         """
         Get's the potential spots for the board if it makes any of the given moves.
         If moves is None then returns it's own current spots.
+
+    NOTES:
+    1) Should REALLY optomize this.  All the Deepcopys can definitely be implemented in a much better way
         """
         if moves is None:
             return self.spots
@@ -249,32 +260,34 @@ class Board:
             original_spots = copy.deepcopy(self.spots)
             self.make_move(move, switch_player_turn=False)
             answer.append(copy.deepcopy(self.spots))  # or this one
-            self.spots = copy.deepcopy(original_spots)##########################################DON'T THINK THIS DEEPCOPY IS NEEDED
+            self.spots = copy.deepcopy(original_spots) #############################DON'T THINK THIS DEEPCOPY IS NEEDED
         return answer
+        
+        
+    def insert_pieces(self, pieces_info):
+      """
+      Inserts a set of pieces onto a board.
+
+      pieces_info is in the form: [[vert1, horz1, piece1], [vert2, horz2, piece2], ..., [vertn, horzn, piecen]]
+      """
+      for piece_info in pieces_info:
+          self.spots[piece_info[0]][piece_info[1]] = piece_info[2]
         
     
     def get_symbol(self, location):
         """
         Gets the symbol for what should be at a board location.
         """
-        if self.spots[location[0]][location[1]] == 0:
+        if self.spots[location[0]][location[1]] == self.EMPTY_SPOT:
             return " "
-        elif self.spots[location[0]][location[1]] == 1:
+        elif self.spots[location[0]][location[1]] == self.P1:
             return "o"
-        elif self.spots[location[0]][location[1]] == 2:
+        elif self.spots[location[0]][location[1]] == self.P2:
             return "x"
-        elif self.spots[location[0]][location[1]] == 3:
+        elif self.spots[location[0]][location[1]] == self.P1_K:
             return "O"
         else:
             return "X"
-    
-
-    def get_small_string_for_board(self):
-        """
-        No longer in use.
-        """
-        slist = ["".join(map(str,self.spots[j])) for j in range(8)]
-        return str(self.player_turn) + ":" + "".join(slist)
     
     
     def print_board(self):
@@ -283,63 +296,17 @@ class Board:
         """
         norm_line = "|---|---|---|---|---|---|---|---|"
         print(norm_line)
-        for j in range(8):
+        for j in range(self.HEIGHT):
             if j%2==1:
                 temp_line = "|///|"
             else:
                 temp_line = "|"
-            for i in range(4):
+            for i in range(self.WIDTH):
                 temp_line = temp_line + " " + self.get_symbol([j,i]) + " |"
-                if i!=3 or j%2!=1:
+                if i!=3 or j%2!=1:   #should figure out if this 3 should be changed to self.WIDTH-1
                     temp_line = temp_line + "///|"
             print(temp_line)
             print(norm_line)            
 
-        
-def get_board_from_string(string):
-    """
-    No longer in use.
-    """
-    answer = []
-    if len(string) == 37:
-        spot_info = map(int, list(string[5:]))
-        for j in range(8):
-            answer.append(spot_info[j*4:j*4+4])
-        return Board(answer, True)
-    else:
-        spot_info = map(int, list(string[6:]))
-        for j in range(8):
-            answer.append(spot_info[j*4:j*4+4])
-        return Board(answer, False)
 
-
-def get_possible_states(start_board_string):
-    """
-    Starts from a traditional start position for the Checkers board, and gets a full list
-    of achievable states (configurations of the board) from the start state.
-    
-    IMPORTANT NOTE: Computational time is FAR too large, 
-    so the use of this function is currently not possible.
-    """
-    start_time = time.time()
-    to_connect = [start_board_string]
-    connected = []
-    while len(to_connect) != 0: 
-        cur_board = get_board_from_string(to_connect.pop())
-        connected.append(cur_board.get_small_string_for_board())
-        possible_next_moves = cur_board.get_possible_next_moves()
-        possible_next_boards = []
-        for move in possible_next_moves:
-            temp_board = Board(copy.deepcopy(cur_board.spots), copy.deepcopy(cur_board.player_turn))
-            temp_board.make_move(move)
-            possible_next_boards.append(temp_board.get_small_string_for_board())
-            for j in range(len(possible_next_boards)):
-                temp_board_string = possible_next_boards[j]
-                if temp_board_string not in to_connect:
-                    if temp_board_string not in connected:
-                        to_connect.append(possible_next_boards[j])
-   
-        if len(connected)%2500==0:
-            print("len(connected): " + str(len(connected)) + "   len(to_connect): " + str(len(to_connect)) + "     time since execution: " + str(time.time() - start_time))
-    return connected
 
