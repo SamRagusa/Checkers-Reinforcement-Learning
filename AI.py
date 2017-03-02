@@ -6,8 +6,9 @@ Created on Dec 3, 2016
 
 import random
 import json
+import copy
 from ast import literal_eval
-from game import Board
+from Board import Board
 import matplotlib.pyplot as plt
 
 class Player:
@@ -43,7 +44,7 @@ class Player:
 def reward_function(state_info1, state_info2):
     """
     Reward for transitioning from state with state_info1 to state with state_info2.
-
+    
     NOTE:
     1) do something better with where/how this is implemented
     2) should give some kind of negative for tieing
@@ -91,6 +92,13 @@ class Q_Learning_AI(Player):
         Sets the random move probability for the AI.
         """
         self.random_move_probability = probability
+
+
+    def set_learning_rate(self, the_learning_rate):
+        """
+        Sets the learning rate for the AI.
+        """
+        self.learning_rate = the_learning_rate
     
 
     def get_states_from_boards_spots(self, boards_spots):
@@ -123,7 +131,6 @@ class Q_Learning_AI(Player):
                             #piece_counters[k][8] = piece_counters[k][8] + i
                             piece_counters[k][6] = piece_counters[k][6] + j
             
-            ############## Use the better method for division typed as int that I think exists
             """
             if piece_counters[k][0] + piece_counters[k][2] != 0: #%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (2)
                 piece_counters[k][5] = int(piece_counters[k][5] / (piece_counters[k][0] + piece_counters[k][2]))
@@ -177,7 +184,7 @@ class Q_Learning_AI(Player):
     
         try:
             reverse_dict = {j:i for i,j in done_transitions.items()}
-            return reverse_dict[max(reverse_dict)]
+            return reverse_dict.get(max(reverse_dict))
         except:
             return []    
    
@@ -189,12 +196,14 @@ class Q_Learning_AI(Player):
         """
         cur_state = self.get_states_from_boards_spots([self.board.spots])[0]
         transition = (self.pre_last_move_state ,self.post_last_move_state)
+
         self.transitions[transition] = self.transitions[transition] + self.learning_rate * reward_function(transition[0],cur_state)
-        
+
         self.pre_last_move_state = None
         self.post_last_move_state = None
 
-    
+
+
     def get_transitions_information(self):
         """
         Get an array of of information about the dictionary self.transitions .
@@ -304,16 +313,11 @@ class Q_Learning_AI(Player):
         
         possible_next_moves = self.board.get_possible_next_moves()
         possible_next_states = self.get_states_from_boards_spots(self.board.get_potential_spots_from_moves(possible_next_moves))
-    
         
-        #self.post_last_move_state = get_desired_transition_between_states(self.q_array, self.q_array_states, get_states_from_boards_spots([self.board.spots])[0], possible_next_states, self.random_move_probability)
-        temp = self.get_desired_transition_between_states(possible_next_states)
-        self.post_last_move_state = temp[1]   
-        
-        
+        self.post_last_move_state = self.get_desired_transition_between_states(possible_next_states)[1]   
         
         considered_moves = []
-        for j in range(len(possible_next_states)):   ###########OPTOMIZE THIS BY USING BUILT IN PYTHON FUNCTIONS##########
+        for j in range(len(possible_next_states)):
             if tuple(possible_next_states[j]) == self.post_last_move_state:
                 considered_moves.append(possible_next_moves[j])
                 
@@ -369,31 +373,39 @@ class Alpha_beta(Player):
         A method implementing alpha-beta pruning to decide what move to make given 
         the current board configuration. 
         """
-        if depth == 0:
-            if self.board.is_game_over():
-                if get_number_of_pieces_and_kings(self.board.spots, self.player_id) == [0,0]:
-                    return float('inf'), None
-                elif get_number_of_pieces_and_kings(self.board.spots, not self.player_id) == [0,0]: 
-                    return float('-inf'), None
+        if board.is_game_over():
+            if get_number_of_pieces_and_kings(board.spots, board.player_turn) == [0,0]:
+                if maximizing_player:
+                    return -10000000, None  #Using integers instead of float("inf") so it's less than float("inf") not equal to
                 else:
-                    return 0, None
-            players_info = get_number_of_pieces_and_kings(self.board.spots)
-            return  players_info[0] + 2 * players_info[2] - (players_info[1] + 2 * players_info[3]), None
+                    return 10000000, None
+            elif get_number_of_pieces_and_kings(board.spots, not board.player_turn) == [0,0]:
+                if maximizing_player:
+                    return 1000000, None
+                else:
+                    return -1000000, None
+            else:
+                return 0, None
 
-        possible_moves = self.board.get_possible_next_moves()
-        potential_spots = self.board.get_potential_spots_from_moves(possible_moves)
+        if depth == 0:
+            players_info = get_number_of_pieces_and_kings(board.spots)
+            if board.player_turn != maximizing_player:
+                return  players_info[1] + 2 * players_info[3] - (players_info[0] + 2 * players_info[2]), None
+            return  players_info[0] + 2 * players_info[2] - (players_info[1] + 2 * players_info[3]), None
+        possible_moves = board.get_possible_next_moves()
+
+        potential_spots = board.get_potential_spots_from_moves(possible_moves)
         desired_move_index = None
         if maximizing_player:
             v = float('-inf')
             for j in range(len(potential_spots)):
-                cur_board = Board.Board(potential_spots[j], not board.player_turn)
+                cur_board = Board(potential_spots[j], not board.player_turn)
                 alpha_beta_results = self.alpha_beta(cur_board, depth - 1, alpha, beta, False)
-            
-                if v != max(v, alpha_beta_results[0]):  ###WHY DIDN'T I USE GREATER THAN?#############################
-                    v = max(v, alpha_beta_results[0])
+                if v < alpha_beta_results[0]: 
+                    v = alpha_beta_results[0]
                     alpha = max(alpha, v)
                     desired_move_index = j
-                if beta <= alpha:
+                if beta <= alpha: 
                     break
             if desired_move_index is None:
                 return v, None
@@ -401,11 +413,10 @@ class Alpha_beta(Player):
         else:
             v = float('inf')
             for j in range(len(potential_spots)):
-                cur_board = Board.Board(potential_spots[j], not self.board.player_turn)
+                cur_board = Board(potential_spots[j], not board.player_turn)
                 alpha_beta_results = self.alpha_beta(cur_board, depth - 1, alpha, beta, True)
-
-                if v != min(v, alpha_beta_results[0]):   ###WHY DIDN'T I USE LESS THAN?##################################
-                    v = min(v, alpha_beta_results[0])
+                if v > alpha_beta_results[0]:  
+                    v = alpha_beta_results[0]
                     desired_move_index = j
                     beta = min(beta, v)
                 if beta <= alpha:
@@ -425,12 +436,11 @@ def play_n_games(player1, player2, num_games, move_limit):
     This function outputs an array of arrays formatted as followed (only showing game 1's info):
     [[game1_outcome, num_moves, num_own_pieces, num_opp_pieces, num_own_kings, num_opp_kings]...]
     gameN_outcome is 0 if player1 won, 1 if lost, 2 if tied, and 3 if hit move limit.
-
     PRECONDITIONS:
     1)Both player1 and player2 inherit the Player class
     2)Both player1 and player2 play legal moves only
     """
-    game_board = Board.Board()
+    game_board = Board()
     player1.set_board(game_board)
     player2.set_board(game_board)
      
@@ -440,9 +450,6 @@ def play_n_games(player1, player2, num_games, move_limit):
         #print(j)
         move_counter = 0
         while not game_board.is_game_over() and move_counter < move_limit:
-            #game_board.print_board()
-            #print(game_board.get_possible_next_moves())
-            
             game_board.make_move(players_move.get_next_move())
              
             move_counter = move_counter + 1
@@ -478,7 +485,7 @@ def play_n_games(player1, player2, num_games, move_limit):
             player1.game_completed()
             player2.game_completed()
             #game_board.print_board()
-            game_board.wipe_board()
+            game_board.reset_board()
      
     return outcome_counter
 
@@ -545,25 +552,26 @@ def plot_end_game_information(outcome, interval, title="End of Game Results"):
     plt.xlabel("Interval")
     
     plt.legend(handles=[p1_win_graph, p2_win_graph, tie_graph, move_limit_graph])
-    #plt.show()
 
 
 
-LEARNING_RATE = .001  #properly pick this
+
+LEARNING_RATE = .005  
 DISCOUNT_FACTOR = .3
-NUM_GAMES_TO_TRAIN = 1
-NUM_TRAINING_ROUNDS = 2
-NUM_VALIDATION_GAMES = 50
-NUM_GAMES_TO_TEST = 1
+NUM_GAMES_TO_TRAIN = 1000
+NUM_TRAINING_ROUNDS = 10
+NUM_VALIDATION_GAMES = 200
+NUM_GAMES_TO_TEST = 0
 TRAINING_RANDOM_MOVE_PROBABILITY = .25
-ALPHA_BETA_DEPTH = 6
-TRAINING_MOVE_LIMIT = 800
-VALIDATION_MOVE_LIMIT = 1000
+ALPHA_BETA_DEPTH = 2
+TRAINING_MOVE_LIMIT = 500
+VALIDATION_MOVE_LIMIT = 600
 TESTING_MOVE_LIMIT = 2000
-PLAYER1 = Q_Learning_AI(True, LEARNING_RATE, DISCOUNT_FACTOR, info_location="data.json", the_random_move_probability=TRAINING_RANDOM_MOVE_PROBABILITY)
+PLAYER1 = Q_Learning_AI(True, LEARNING_RATE, DISCOUNT_FACTOR, the_random_move_probability=TRAINING_RANDOM_MOVE_PROBABILITY)#, info_location="data.json")
 PLAYER2 = Alpha_beta(False, ALPHA_BETA_DEPTH)
 PLAYER3 = Alpha_beta(False, 1)
 PLAYER4 = Alpha_beta(False, 3)
+
 
 
 #PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
@@ -572,32 +580,40 @@ training_info = []
 validation_info = []
 for j in range(NUM_TRAINING_ROUNDS):
     training_info.extend(play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TRAIN, TRAINING_MOVE_LIMIT))
-    #PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
-    PLAYER1.set_random_move_probability(0)
-    validation_info.extend(play_n_games(PLAYER1, PLAYER3, NUM_VALIDATION_GAMES, VALIDATION_MOVE_LIMIT))
-    PLAYER1.set_random_move_probability(TRAINING_RANDOM_MOVE_PROBABILITY)
-    print("Round " + str(j+1) + " completed!")
     PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
+    PLAYER1.set_random_move_probability(0)
+    PLAYER1.set_learning_rate(0)
+    validation_info.extend(play_n_games(PLAYER1, PLAYER3, NUM_VALIDATION_GAMES, VALIDATION_MOVE_LIMIT))
+    print("Round " + str(j+1) + " completed!")
+    PLAYER1.set_random_move_probability(TRAINING_RANDOM_MOVE_PROBABILITY)
+    PLAYER1.set_learning_rate(LEARNING_RATE)
+    #print("")
+    #PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
+    print("")
+    PLAYER1.save_transition_information()
 
   
-plot_end_game_information(training_info, 1, "Training Information")
+plot_end_game_information(training_info, 200, "Training Information")
 plot_end_game_information(validation_info, NUM_VALIDATION_GAMES, "Validation Information")
 plt.show()
 
-"""
-PLAYER1.set_random_move_probability(0)
+pretty_outcome_display(training_info)
+print("")
+pretty_outcome_display(validation_info)
 
+"""
+
+PLAYER1.set_random_move_probability(0)
 pretty_outcome_display(play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TEST, TESTING_MOVE_LIMIT))
 PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
 print(" ")
-
 pretty_outcome_display(play_n_games(PLAYER1, PLAYER3, NUM_GAMES_TO_TEST, TESTING_MOVE_LIMIT))
 PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
 print(" ")
-
 pretty_outcome_display(play_n_games(PLAYER1, PLAYER4, NUM_GAMES_TO_TEST, TESTING_MOVE_LIMIT))
 PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
+
 """
 
+#PLAYER1.save_transition_information()
 
-PLAYER1.save_transition_information()
