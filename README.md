@@ -29,10 +29,11 @@ The characteristics of the states are as follows:
 2. Number of opponent uncrowned pieces
 3. Number of own kings
 4. Number of opponent kings
-5. Integer value of own vertical center of mass
-6. Integer value of opponent vertical center of mass
+5. Number of own pieces (crowned and uncrowned) on left and right edges of board
+6. Integer value of own vertical center of mass
+7. Integer value of opponent vertical center of mass
 
-For characteristics 5 and 6, the center of mass is calculated with an uncrowned piece having the same mass as a king.
+For characteristics 6 and 7, the center of mass is calculated with an uncrowned piece having the same mass as a king.
 
 
 #### Dynamically Discovering Transitions
