@@ -128,10 +128,58 @@ def test_alpha_beta_ai():
     print_test_results(computed_outputs, desired_outputs)
 
 
+def test_board_functions_not_next_move():
+    """
+    Tests the methods in the Board class excluding the possible_next_moves method.
+    Makes moves and sees if the final board configuration is correct.
+    Has an alpha-beta pruning AI look for it's next move throughout to make
+    sure some methods of Board would not alter the Board configuration.
+    """
+    
+    old_spots = [[1,4,1,1],[1,0,1,1],[1,1,0,1],[0,0,0,0],[0,0,0,0],[0,1,2,2],[2,2,2,2],[2,2,2,2]]
+    
 
+    
+    board = Board()
+    
+    #Make sure some Board methods don't alter the board
+    alpha_beta_ai = Alpha_beta(False, 6)
+    alpha_beta_ai.set_board(board)
+    
+    alpha_beta_ai.get_next_move()
+    board.make_move([[2,0],[3,0]])
+    board.make_move([[5,0],[4,1]])
+    alpha_beta_ai.get_next_move()
+    board.make_move([[2,2],[3,1]])
+    board.make_move([[1,0],[2,0]])
+    alpha_beta_ai.get_next_move()
+    board.make_move([[0,1],[1,0]])
+    board.make_move([[4,1],[2,2],[0,1]])
+    alpha_beta_ai.get_next_move()
+    board.make_move([[5,1],[4,1]])
+    board.make_move([[3,0],[5,1]])
+    alpha_beta_ai.get_next_move()
+
+    if board.spots == old_spots:
+        print("Test passed.")
+    else:
+        print("Test failed.")
+        print_test_results([board.spots],[old_spots])
+
+
+
+
+
+
+
+print("Board tests:")
+test_board_functions_not_next_move() 
+print("") 
 print("Possible next move tests:")
 test_possible_next_moves()
 print("")
 print("Alpha-beta Pruning tests:")
 test_alpha_beta_ai()    
+
+  
 
