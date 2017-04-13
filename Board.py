@@ -10,7 +10,6 @@ which is showing the piece at [x1,x2] goes to [x2,y2] then [x3,y3] as one move
 
 import math
 import copy
-import time
 from functools import reduce
 
 class Board:
@@ -37,7 +36,7 @@ class Board:
         """
         self.player_turn = the_player_turn 
         if old_spots is None:   
-            self.spots = [[j,j,j,j] for j in [self.P1, self.P1, self.P1, self.EMPTY_SPOT, self.EMPTY_SPOT, self.P2, self.P2, self.P2]]
+            self.spots = [[j, j, j, j] for j in [self.P1, self.P1, self.P1, self.EMPTY_SPOT, self.EMPTY_SPOT, self.P2, self.P2, self.P2]]
         else:
             self.spots = old_spots
 
@@ -51,10 +50,10 @@ class Board:
         
     
     def empty_board(self):
-      """
-      Removes any pieces currently on the board and leaves the board with nothing but empty spots.
-      """
-      self.spots = [[j,j,j,j] for j in [self.EMPTY_SPOT]*self.HEIGHT]  #Make sure [self.EMPTY_SPOT]*self.HEIGHT] has no issues
+        """
+        Removes any pieces currently on the board and leaves the board with nothing but empty spots.
+        """
+        self.spots = [[j, j, j, j] for j in [self.EMPTY_SPOT] * self.HEIGHT]  # Make sure [self.EMPTY_SPOT]*self.HEIGHT] has no issues
     
     
     def is_game_over(self):
@@ -71,7 +70,7 @@ class Board:
         """
         Finds out of the spot at the given location is an actual spot on the game board.
         """
-        if len(loc) == 0 or loc[0] < 0 or loc[0] > self.HEIGHT-1 or loc[1] < 0 or loc[1] > self.WIDTH-1:
+        if len(loc) == 0 or loc[0] < 0 or loc[0] > self.HEIGHT - 1 or loc[1] < 0 or loc[1] > self.WIDTH - 1:
             return True
         return False
     
@@ -129,7 +128,7 @@ class Board:
             next_locations = self.forward_n_locations(start_loc, 1)
             next_locations.extend(self.forward_n_locations(start_loc, 1, True))
         elif self.spots[start_loc[0]][start_loc[1]] == self.BACKWARDS_PLAYER:
-            next_locations = self.forward_n_locations(start_loc, 1, True)  #Switched the true from the statement below
+            next_locations = self.forward_n_locations(start_loc, 1, True)  # Switched the true from the statement below
         else:
             next_locations = self.forward_n_locations(start_loc, 1)
         
@@ -154,28 +153,28 @@ class Board:
         answer = []
         if self.spots[start_loc[0]][start_loc[1]] > 2:  
             next1 = self.forward_n_locations(start_loc, 1)
-            next2 = self.forward_n_locations(start_loc,2)
+            next2 = self.forward_n_locations(start_loc, 2)
             next1.extend(self.forward_n_locations(start_loc, 1, True))
             next2.extend(self.forward_n_locations(start_loc, 2, True))
         elif self.spots[start_loc[0]][start_loc[1]] == self.BACKWARDS_PLAYER:
             next1 = self.forward_n_locations(start_loc, 1, True)
-            next2 = self.forward_n_locations(start_loc,2, True)
+            next2 = self.forward_n_locations(start_loc, 2, True)
         else:
             next1 = self.forward_n_locations(start_loc, 1)
-            next2 = self.forward_n_locations(start_loc,2)
+            next2 = self.forward_n_locations(start_loc, 2)
         
         
         for j in range(len(next1)):
-            if (not self.not_spot(next2[j])) and (not self.not_spot(next1[j])) : #if both spots exist
-                if self.get_spot_info(next1[j]) != self.EMPTY_SPOT and self.get_spot_info(next1[j])%2 != self.get_spot_info(start_loc)%2:  #if next spot is opponent
-                    if self.get_spot_info(next2[j]) == self.EMPTY_SPOT:  #if next next spot is empty
+            if (not self.not_spot(next2[j])) and (not self.not_spot(next1[j])) :  # if both spots exist
+                if self.get_spot_info(next1[j]) != self.EMPTY_SPOT and self.get_spot_info(next1[j]) % 2 != self.get_spot_info(start_loc) % 2:  # if next spot is opponent
+                    if self.get_spot_info(next2[j]) == self.EMPTY_SPOT:  # if next next spot is empty
                         temp_move1 = copy.deepcopy(move_beginnings)
                         temp_move1.append(next2[j])
                         
                         answer_length = len(answer)
                         
-                        if self.get_spot_info(start_loc)!=self.P1 or next2[j][0] != self.HEIGHT-1:  #Was 7, should make sure this change is done correctly
-                            if self.get_spot_info(start_loc)!=self.P2 or next2[j][0] != 0: 
+                        if self.get_spot_info(start_loc) != self.P1 or next2[j][0] != self.HEIGHT - 1: 
+                            if self.get_spot_info(start_loc) != self.P2 or next2[j][0] != 0: 
 
                                 temp_move2 = [start_loc, next2[j]]
                                 
@@ -198,17 +197,17 @@ class Board:
         for j in range(self.HEIGHT):
             for i in range(self.WIDTH):
                 if (self.player_turn == True and (self.spots[j][i] == self.P1 or self.spots[j][i] == self.P1_K)) or (self.player_turn == False and (self.spots[j][i] == self.P2 or self.spots[j][i] == self.P2_K)):
-                    piece_locations.append([j,i])
+                    piece_locations.append([j, i])
                     
-        try:
-          capture_moves = list(reduce(lambda a,b: a+b, list(map(self.get_capture_moves, piece_locations)))) #CHECK IF OUTER LIST IS NECESSARY
+        try:  #Should check to make sure if this try statement is still necessary 
+            capture_moves = list(reduce(lambda a, b: a + b, list(map(self.get_capture_moves, piece_locations))))  # CHECK IF OUTER LIST IS NECESSARY
 
-          if len(capture_moves) != 0:
-            return capture_moves
+            if len(capture_moves) != 0:
+                return capture_moves
 
-          return list(reduce(lambda a,b: a+b, list(map(self.get_simple_moves, piece_locations)))) #CHECK IF OUTER LIST IS NECESSARY
+            return list(reduce(lambda a, b: a + b, list(map(self.get_simple_moves, piece_locations))))  # CHECK IF OUTER LIST IS NECESSARY
         except TypeError:
-          return []
+            return []
     
     
     def make_move(self, move, switch_player_turn=True):
@@ -217,28 +216,28 @@ class Board:
         which players turn it is.
         """
         if abs(move[0][0] - move[1][0]) == 2:
-            for j in range(len(move)-1):
-                if move[j][0]%2 == 1:
-                    if move[j+1][1] < move[j][1]:
+            for j in range(len(move) - 1):
+                if move[j][0] % 2 == 1:
+                    if move[j + 1][1] < move[j][1]:
                         middle_y = move[j][1]
                     else:
-                        middle_y = move[j+1][1]
+                        middle_y = move[j + 1][1]
                 else:
-                    if move[j+1][1] < move[j][1]:
-                        middle_y = move[j+1][1]
+                    if move[j + 1][1] < move[j][1]:
+                        middle_y = move[j + 1][1]
                     else:
                         middle_y = move[j][1]
                         
-                self.spots[int((move[j][0] + move[j+1][0])/2)][middle_y] = self.EMPTY_SPOT
+                self.spots[int((move[j][0] + move[j + 1][0]) / 2)][middle_y] = self.EMPTY_SPOT
                 
                 
-        self.spots[move[len(move)-1][0]][move[len(move)-1][1]] = self.spots[move[0][0]][move[0][1]]
-        if move[len(move)-1][0] == self.HEIGHT-1 and self.spots[move[len(move)-1][0]][move[len(move)-1][1]] == self.P1:
-            self.spots[move[len(move)-1][0]][move[len(move)-1][1]] = self.P1_K
-        elif move[len(move)-1][0] == 0 and self.spots[move[len(move)-1][0]][move[len(move)-1][1]] == self.P2:
-            self.spots[move[len(move)-1][0]][move[len(move)-1][1]] = self.P2_K
+        self.spots[move[len(move) - 1][0]][move[len(move) - 1][1]] = self.spots[move[0][0]][move[0][1]]
+        if move[len(move) - 1][0] == self.HEIGHT - 1 and self.spots[move[len(move) - 1][0]][move[len(move) - 1][1]] == self.P1:
+            self.spots[move[len(move) - 1][0]][move[len(move) - 1][1]] = self.P1_K
+        elif move[len(move) - 1][0] == 0 and self.spots[move[len(move) - 1][0]][move[len(move) - 1][1]] == self.P2:
+            self.spots[move[len(move) - 1][0]][move[len(move) - 1][1]] = self.P2_K
         else:
-            self.spots[move[len(move)-1][0]][move[len(move)-1][1]] = self.spots[move[0][0]][move[0][1]]
+            self.spots[move[len(move) - 1][0]][move[len(move) - 1][1]] = self.spots[move[0][0]][move[0][1]]
         self.spots[move[0][0]][move[0][1]] = self.EMPTY_SPOT
                 
         if switch_player_turn:
@@ -249,9 +248,6 @@ class Board:
         """
         Get's the potential spots for the board if it makes any of the given moves.
         If moves is None then returns it's own current spots.
-
-    NOTES:
-    1) Should REALLY optomize this.  All the Deepcopys can definitely be implemented in a much better way
         """
         if moves is None:
             return self.spots
@@ -259,19 +255,19 @@ class Board:
         for move in moves:
             original_spots = copy.deepcopy(self.spots)
             self.make_move(move, switch_player_turn=False)
-            answer.append(copy.deepcopy(self.spots))  # or this one
-            self.spots = copy.deepcopy(original_spots) #############################DON'T THINK THIS DEEPCOPY IS NEEDED
+            answer.append(self.spots) 
+            self.spots = original_spots 
         return answer
         
         
     def insert_pieces(self, pieces_info):
-      """
-      Inserts a set of pieces onto a board.
+        """
+        Inserts a set of pieces onto a board.
 
-      pieces_info is in the form: [[vert1, horz1, piece1], [vert2, horz2, piece2], ..., [vertn, horzn, piecen]]
-      """
-      for piece_info in pieces_info:
-          self.spots[piece_info[0]][piece_info[1]] = piece_info[2]
+        pieces_info is in the form: [[vert1, horz1, piece1], [vert2, horz2, piece2], ..., [vertn, horzn, piecen]]
+        """
+        for piece_info in pieces_info:
+            self.spots[piece_info[0]][piece_info[1]] = piece_info[2]
         
     
     def get_symbol(self, location):
@@ -297,13 +293,13 @@ class Board:
         norm_line = "|---|---|---|---|---|---|---|---|"
         print(norm_line)
         for j in range(self.HEIGHT):
-            if j%2==1:
+            if j % 2 == 1:
                 temp_line = "|///|"
             else:
                 temp_line = "|"
             for i in range(self.WIDTH):
-                temp_line = temp_line + " " + self.get_symbol([j,i]) + " |"
-                if i!=3 or j%2!=1:   #should figure out if this 3 should be changed to self.WIDTH-1
+                temp_line = temp_line + " " + self.get_symbol([j, i]) + " |"
+                if i != 3 or j % 2 != 1:  # should figure out if this 3 should be changed to self.WIDTH-1
                     temp_line = temp_line + "///|"
             print(temp_line)
             print(norm_line)            
