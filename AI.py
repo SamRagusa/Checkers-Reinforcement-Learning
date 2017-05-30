@@ -6,7 +6,6 @@ Created on Dec 3, 2016
 
 import random
 import json
-import copy
 from ast import literal_eval
 from Board import Board
 import matplotlib.pyplot as plt
@@ -58,16 +57,12 @@ def reward_function(state_info1, state_info2):
 
 class Q_Learning_AI(Player):
     """
-    ######################################################################
-    
     TO-DO:
-    1) add ability to train or not train when wanted
+    1) add ability to not train when wanted in a more efficient way
         A) when not training also don't look for/add currently unknown states
         B) do this by having an instance variable saying if it's testing or training
         C) and let a function set that parameter
-    2) (Think this is done) Add state attributes for center of mass of both opponent and self (vert, and maybe also horz)
-    3) create set method for random move probability and learning rate
-    4) handle the rewards function which is coded as if the function were already defined
+    2) handle the rewards function which is coded as if the function were already defined
     """
 
 
@@ -75,7 +70,7 @@ class Q_Learning_AI(Player):
         """
         Initialize the instance variables to be stored by the AI. 
         """
-        self.random_move_probability = the_random_move_probability  #May want to rename this
+        self.random_move_probability = the_random_move_probability
         self.learning_rate = the_learning_rate    
         self.discount_factor = the_discount_factor
         self.player_id = the_player_id
@@ -111,12 +106,10 @@ class Q_Learning_AI(Player):
         [(own_pieces, opp_pieces, own_kings, opp_kings, own_edges, own_vert_center_mass, opp_vert_center_mass), ...]
         """
         piece_counters = [[0,0,0,0,0,0,0] for j in range(len(boards_spots))] 
-        #piece_counters = [[0,0,0,0,0,0,0,0,0] for j in range(len(boards_spots))] 
         for k in range(len(boards_spots)):
             for j in range(len(boards_spots[k])):
                 for i in range(len(boards_spots[k][j])):
                     if boards_spots[k][j][i] != 0:
-                    
                         piece_counters[k][boards_spots[k][j][i]-1] = piece_counters[k][boards_spots[k][j][i]-1] + 1
                         if (self.player_id and (boards_spots[k][j][i] == 1 or boards_spots[k][j][i] == 3)) or (not self.player_id and (boards_spots[k][j][i] == 2 or boards_spots[k][j][i] == 4)):
                             if i==0 and j%2==0:
@@ -124,52 +117,30 @@ class Q_Learning_AI(Player):
                             elif i==3 and j%2==1:
                                 piece_counters[k][4] = piece_counters[k][4] + 1
                                 
-                            piece_counters[k][5] = piece_counters[k][5] + j#%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (2)
-                            #piece_counters[k][6] = piece_counters[k][6] + i
+                            piece_counters[k][5] = piece_counters[k][5] + j
                         else: 
-                            #piece_counters[k][7] = piece_counters[k][7] + j#%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (2)
-                            #piece_counters[k][8] = piece_counters[k][8] + i
                             piece_counters[k][6] = piece_counters[k][6] + j
             
-            """
-            if piece_counters[k][0] + piece_counters[k][2] != 0: #%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (2)
+            if piece_counters[k][0] + piece_counters[k][2] != 0:
                 piece_counters[k][5] = int(piece_counters[k][5] / (piece_counters[k][0] + piece_counters[k][2]))
-                piece_counters[k][6] = int(piece_counters[k][6] / (piece_counters[k][0] + piece_counters[k][2]))
             else:
                 piece_counters[k][5] = 0
-                piece_counters[k][6] = 0
-            if piece_counters[k][1] + piece_counters[k][3] != 0:
-                piece_counters[k][7] = int(piece_counters[k][7] / (piece_counters[k][1] + piece_counters[k][3]))
-                piece_counters[k][8] = int(piece_counters[k][8] / (piece_counters[k][1] + piece_counters[k][3]))
-            else:
-                piece_counters[k][7] = 0
-                piece_counters[k][8] = 0
-            """
-            
-            if piece_counters[k][0] + piece_counters[k][2] != 0: #%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (2)
-                piece_counters[k][5] = int(piece_counters[k][5] / (piece_counters[k][0] + piece_counters[k][2]))
-                #piece_counters[k][6] = int(piece_counters[k][6] / (piece_counters[k][0] + piece_counters[k][2]))
-            else:
-                piece_counters[k][5] = 0
-                #piece_counters[k][6] = 0
             if piece_counters[k][1] + piece_counters[k][3] != 0:
                 piece_counters[k][6] = int(piece_counters[k][6] / (piece_counters[k][1] + piece_counters[k][3]))
-                #piece_counters[k][8] = int(piece_counters[k][8] / (piece_counters[k][1] + piece_counters[k][3]))
             else:
                 piece_counters[k][6] = 0
-                #piece_counters[k][8] = 0
-    
+
         return [tuple(counter) for counter in piece_counters]
                                  
 
-    def get_desired_transition_between_states(self, possible_state_array, initial_transition_value=5):#%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (1)
+    def get_desired_transition_between_states(self, possible_state_array, initial_transition_value=10):#%%%%%%%%%%%%%%%%%% FOR (1)
         """
         Gets the desired transition to taken for the current board configuration.
         If any possible transition does not exist, it will create it.
         """
         cur_state = tuple(self.get_states_from_boards_spots([self.board.spots])[0])
         done_transitions = {}
-        for state in possible_state_array:#%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (1)
+        for state in possible_state_array:#%%%%%%%%%%%%%%%%%%%%%% FOR (1)
             if done_transitions.get((cur_state, tuple(state))) is None:
                 if self.transitions.get((cur_state, tuple(state))) is None:
                     self.transitions.update({(cur_state, tuple(state)):initial_transition_value})
@@ -179,7 +150,7 @@ class Q_Learning_AI(Player):
         if random != 0 and random.random() < self.random_move_probability:
             try:
                 return list(done_transitions.keys())[random.randint(0, len(done_transitions)-1)]
-            except:   #Make sure that you don't need to specify the exception
+            except:   
                 return []
     
         try:
@@ -298,7 +269,7 @@ class Q_Learning_AI(Player):
         PRECONDITIONS:
         1)  The board exists and is legal
         """
-        if self.pre_last_move_state is not None:#%%%%%%%%%%%%%%%%%%%%%%%%%%%% FOR (1)
+        if self.pre_last_move_state is not None:#%%%%%%%%%%%%%%%%%%%%%%% FOR (1)
             cur_state = self.get_states_from_boards_spots([self.board.spots])[0]
     
             transition = (self.pre_last_move_state ,self.post_last_move_state)
@@ -322,13 +293,13 @@ class Q_Learning_AI(Player):
                 considered_moves.append(possible_next_moves[j])
                 
                 
-
         #I believe with the updated board.is_game_over() I don't need to use this try statement 
-        try:
-            return considered_moves[random.randint(0,len(considered_moves)-1)]
-        except ValueError:
-            return []
-            
+#         try:
+#             return considered_moves[random.randint(0,len(considered_moves)-1)]
+#         except ValueError:
+#             return []
+        
+        return considered_moves[random.randint(0,len(considered_moves)-1)]
 
 def get_number_of_pieces_and_kings(spots, player_id=None):
     """
@@ -358,6 +329,7 @@ class Alpha_beta(Player):
     
     TO DO:
     1) Be able to take in any reward function (for when not win/loss) 
+    so that you can make a more robust set of training AI
     """
     
     def __init__(self, the_player_id, the_depth, the_board=None):
@@ -376,7 +348,8 @@ class Alpha_beta(Player):
         if board.is_game_over():
             if get_number_of_pieces_and_kings(board.spots, board.player_turn) == [0,0]:
                 if maximizing_player:
-                    return -10000000, None  #Using integers instead of float("inf") so it's less than float("inf") not equal to
+                    #Using integers instead of float("inf") so it's less than float("inf") not equal to
+                    return -10000000, None
                 else:
                     return 10000000, None
             elif get_number_of_pieces_and_kings(board.spots, not board.player_turn) == [0,0]:
@@ -436,6 +409,7 @@ def play_n_games(player1, player2, num_games, move_limit):
     This function outputs an array of arrays formatted as followed (only showing game 1's info):
     [[game1_outcome, num_moves, num_own_pieces, num_opp_pieces, num_own_kings, num_opp_kings]...]
     gameN_outcome is 0 if player1 won, 1 if lost, 2 if tied, and 3 if hit move limit.
+    
     PRECONDITIONS:
     1)Both player1 and player2 inherit the Player class
     2)Both player1 and player2 play legal moves only
@@ -555,27 +529,27 @@ def plot_end_game_information(outcome, interval, title="End of Game Results"):
 
 
 
-
+ 
 LEARNING_RATE = .005  
 DISCOUNT_FACTOR = .3
-NUM_GAMES_TO_TRAIN = 1000
-NUM_TRAINING_ROUNDS = 10
-NUM_VALIDATION_GAMES = 200
+NUM_GAMES_TO_TRAIN = 100
+NUM_TRAINING_ROUNDS = 25
+NUM_VALIDATION_GAMES = 5
 NUM_GAMES_TO_TEST = 0
 TRAINING_RANDOM_MOVE_PROBABILITY = .25
 ALPHA_BETA_DEPTH = 2
 TRAINING_MOVE_LIMIT = 500
-VALIDATION_MOVE_LIMIT = 600
+VALIDATION_MOVE_LIMIT = 1500
 TESTING_MOVE_LIMIT = 2000
 PLAYER1 = Q_Learning_AI(True, LEARNING_RATE, DISCOUNT_FACTOR, the_random_move_probability=TRAINING_RANDOM_MOVE_PROBABILITY)#, info_location="data.json")
 PLAYER2 = Alpha_beta(False, ALPHA_BETA_DEPTH)
 PLAYER3 = Alpha_beta(False, 1)
 PLAYER4 = Alpha_beta(False, 3)
-
-
-
+PLAYER5 = Q_Learning_AI(False, LEARNING_RATE, DISCOUNT_FACTOR, the_random_move_probability=TRAINING_RANDOM_MOVE_PROBABILITY)
+ 
+  
 #PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
-
+ 
 training_info = []
 validation_info = []
 for j in range(NUM_TRAINING_ROUNDS):
@@ -583,7 +557,7 @@ for j in range(NUM_TRAINING_ROUNDS):
     PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
     PLAYER1.set_random_move_probability(0)
     PLAYER1.set_learning_rate(0)
-    validation_info.extend(play_n_games(PLAYER1, PLAYER3, NUM_VALIDATION_GAMES, VALIDATION_MOVE_LIMIT))
+    validation_info.extend(play_n_games(PLAYER1, PLAYER4, NUM_VALIDATION_GAMES, VALIDATION_MOVE_LIMIT))
     print("Round " + str(j+1) + " completed!")
     PLAYER1.set_random_move_probability(TRAINING_RANDOM_MOVE_PROBABILITY)
     PLAYER1.set_learning_rate(LEARNING_RATE)
@@ -591,18 +565,18 @@ for j in range(NUM_TRAINING_ROUNDS):
     #PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
     print("")
     PLAYER1.save_transition_information()
-
-  
-plot_end_game_information(training_info, 200, "Training Information")
-plot_end_game_information(validation_info, NUM_VALIDATION_GAMES, "Validation Information")
+ 
+    
+#plot_end_game_information(training_info, 200, "Training Information")
+#plot_end_game_information(validation_info, NUM_VALIDATION_GAMES, "Validation Information")
 plt.show()
-
+ 
 pretty_outcome_display(training_info)
 print("")
 pretty_outcome_display(validation_info)
-
+  
 """
-
+ 
 PLAYER1.set_random_move_probability(0)
 pretty_outcome_display(play_n_games(PLAYER1, PLAYER2, NUM_GAMES_TO_TEST, TESTING_MOVE_LIMIT))
 PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
@@ -612,8 +586,8 @@ PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
 print(" ")
 pretty_outcome_display(play_n_games(PLAYER1, PLAYER4, NUM_GAMES_TO_TEST, TESTING_MOVE_LIMIT))
 PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
-
+ 
 """
-
+ 
 #PLAYER1.save_transition_information()
 
