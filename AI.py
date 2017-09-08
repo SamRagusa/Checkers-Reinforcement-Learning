@@ -252,8 +252,8 @@ class Q_Learning_AI(Player):
         answer = float("-inf")
         cur_state = self.get_states_from_boards_spots([self.board.spots])[0]
         for k,v in self.transitions.items():
-            if k > answer and v[0] == cur_state:
-                answer = k
+            if v > answer and k[0] == cur_state:
+                answer = v
         
         if answer == float("-inf"):
             return None
@@ -499,10 +499,10 @@ def pretty_outcome_display(outcomes):
 def plot_end_game_information(outcome, interval, title="End of Game Results"):
     """
     """
-    player1_wins = [0 for j in range(int(len(outcome)/interval))]
-    player2_wins = [0 for j in range(int(len(outcome)/interval))]
-    ties = [0 for j in range(int(len(outcome)/interval))]
-    move_limit = [0 for j in range(int(len(outcome)/interval))]
+    player1_wins = [0 for _ in range(int(len(outcome)/interval))]
+    player2_wins = [0 for _ in range(int(len(outcome)/interval))]
+    ties = [0 for _ in range(int(len(outcome)/interval))]
+    move_limit = [0 for _ in range(int(len(outcome)/interval))]
     
     for j in range(int(len(outcome)/interval)):
         for i in range(interval):
@@ -539,13 +539,13 @@ NUM_GAMES_TO_TEST = 0
 TRAINING_RANDOM_MOVE_PROBABILITY = .25
 ALPHA_BETA_DEPTH = 2
 TRAINING_MOVE_LIMIT = 500
-VALIDATION_MOVE_LIMIT = 1500
+VALIDATION_MOVE_LIMIT = 1000
 TESTING_MOVE_LIMIT = 2000
 PLAYER1 = Q_Learning_AI(True, LEARNING_RATE, DISCOUNT_FACTOR, the_random_move_probability=TRAINING_RANDOM_MOVE_PROBABILITY)#, info_location="data.json")
 PLAYER2 = Alpha_beta(False, ALPHA_BETA_DEPTH)
-PLAYER3 = Alpha_beta(False, 1)
+#PLAYER3 = Alpha_beta(False, 1)
 PLAYER4 = Alpha_beta(False, 3)
-PLAYER5 = Q_Learning_AI(False, LEARNING_RATE, DISCOUNT_FACTOR, the_random_move_probability=TRAINING_RANDOM_MOVE_PROBABILITY)
+# PLAYER5 = Q_Learning_AI(False, LEARNING_RATE, DISCOUNT_FACTOR, the_random_move_probability=TRAINING_RANDOM_MOVE_PROBABILITY)
  
   
 #PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
@@ -589,5 +589,5 @@ PLAYER1.print_transition_information(PLAYER1.get_transitions_information())
  
 """
  
-#PLAYER1.save_transition_information()
+PLAYER1.save_transition_information()
 
