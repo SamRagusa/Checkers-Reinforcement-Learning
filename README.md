@@ -11,7 +11,7 @@ This AI uses a traditional alpha-beta pruning algorithm (with specified depth), 
 value=\Delta\hspace{1pt}U_s-\Delta\hspace{1pt}U_o+2(\Delta\hspace{1pt}K_s-\Delta\hspace{1pt}K_o)
 -->
 
-![equation](http://latex.codecogs.com/gif.latex?value%3D%5CDelta%5Chspace%7B1pt%7DU_s-%5CDelta%5Chspace%7B1pt%7DU_o%2B2%28%5CDelta%5Chspace%7B1pt%7DK_s-%5CDelta%5Chspace%7B1pt%7DK_o%29)
+![equation](http://latex.codecogs.com/svg.latex?value%3D%5CDelta%5Chspace%7B1pt%7DU_s-%5CDelta%5Chspace%7B1pt%7DU_o%2B2%28%5CDelta%5Chspace%7B1pt%7DK_s-%5CDelta%5Chspace%7B1pt%7DK_o%29)
 
 In the above equation, U and K represent the number of uncrowned pieces and number of kings a player has, and their subscripts s and o indicate if the player is itself or it's opponent respectively.  The delta refers to the change in the value following it between the current board configuration and the potential board configuration the AI is considering.   
 
@@ -61,7 +61,7 @@ T(s_n,s_{n+1})\leftarrow\hspace{1pt}T(s_n,s_{n+1})+\alpha(R(s_n,s_{n+2})+\lambda
 
 Directly preceding the AI's turn, if it has already moved at least once this game and the game board is not terminal, then the following value update is used:
 
-![equation](http://latex.codecogs.com/gif.latex?T%28s_n%2Cs_%7Bn%2B1%7D%29%5Cleftarrow%5Chspace%7B1pt%7DT%28s_n%2Cs_%7Bn%2B1%7D%29%2B%5Calpha%28R%28s_n%2Cs_%7Bn%2B2%7D%29%2B%5Clambda%5Cmax%5Climits_m%28T%28s_%7Bn%2B2%7D%2Cs_m%29%29-T%28s_n%2Cs_%7Bn%2B1%7D%29%29)
+![equation](http://latex.codecogs.com/svg.latex?T%28s_n%2Cs_%7Bn%2B1%7D%29%5Cleftarrow%5Chspace%7B1pt%7DT%28s_n%2Cs_%7Bn%2B1%7D%29%2B%5Calpha%28R%28s_n%2Cs_%7Bn%2B2%7D%29%2B%5Clambda%5Cmax%5Climits_m%28T%28s_%7Bn%2B2%7D%2Cs_m%29%29-T%28s_n%2Cs_%7Bn%2B1%7D%29%29)
 
 <!---
 T(s_n,s_{n+1})\leftarrow\hspace{1pt}T(s_n,s_{n+1})+\alpha(R(s_n,s_{n+2}))
@@ -69,7 +69,7 @@ T(s_n,s_{n+1})\leftarrow\hspace{1pt}T(s_n,s_{n+1})+\alpha(R(s_n,s_{n+2}))
 
 If the game board is terminal, then the AI will be notified and will apply the following value update:
 
-![equation](http://latex.codecogs.com/gif.latex?T%28s_n%2Cs_%7Bn%2B1%7D%29%5Cleftarrow%5Chspace%7B1pt%7DT%28s_n%2Cs_%7Bn%2B1%7D%29%2B%5Calpha%28R%28s_n%2Cs_%7Bn%2B2%7D%29%29)
+![equation](http://latex.codecogs.com/svg.latex?T%28s_n%2Cs_%7Bn%2B1%7D%29%5Cleftarrow%5Chspace%7B1pt%7DT%28s_n%2Cs_%7Bn%2B1%7D%29%2B%5Calpha%28R%28s_n%2Cs_%7Bn%2B2%7D%29%29)
 
 
 #### Picking Moves
